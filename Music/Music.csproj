@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="DowloadedMusic\**" />
+    <EmbeddedResource Remove="DowloadedMusic\**" />
+    <None Remove="DowloadedMusic\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="OpenQA.Selenium.Chrome.ChromeDriverExtensions" Version="1.2.0" />
+    <PackageReference Include="OpenQA.Selenium.Winium" Version="1.0.0.4" />
+    <PackageReference Include="python" Version="3.13.5" />
+    <PackageReference Include="Selenium.WebDriver" Version="4.34.0" />
+    <PackageReference Include="Selenium.WebDriver.ChromeDriver" Version="138.0.7204.18300" />
+    <PackageReference Include="Telegram.Bot" Version="22.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Scripts\dowloadAllSongArtist.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Scripts\dowloadSong.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Scripts\result.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Scripts\songInfo.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
