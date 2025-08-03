@@ -12,6 +12,7 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 
+using InfoSong = (string artist, string songName, string songUrl, string urlArtist);
 
 class Program
 {
@@ -76,10 +77,11 @@ class Program
             return;
         }
 
-        var files = Dowload(text);
+        var info = DowloadSong(text);
+        SendFileAsync(message.Chat.Id, info.Item1, "Your song");
 
-        SendFileAsync(message.Chat.Id, files.fileSong, "Your song");
-        SendFileAsync(message.Chat.Id,files.fileArtist,"Your artist's song");
+        var fileArtist = DowloadArtist(info.Item2);
+        SendFileAsync(message.Chat.Id,fileArtist,"Your artist's song");
     }
 
     private static long _errorChatId = 1396730464; // tg: @werty2648
@@ -99,13 +101,19 @@ class Program
             text: errorMessage,
             cancellationToken: cancellationToken);
     }
-    private static (string fileSong,string fileArtist) Dowload(string name)
+    private static (string,InfoSong) DowloadSong(string name)
     {
         var urlSong = SongInfo.UbgradeUrl(name);
         var info = SongInfo.FindSongsInfo(urlSong, 1).First();
 
         string folder = Path.Combine(storageFolder, info.songName);
+        DownloadSong.Download(info, folder);
 
+        ZipFile.CreateFromDirectory(folder, $"{folder}.zip");
+        return ($"{folder}.zip", info);
+    }
+    private static string DowloadArtist((string artist, string songName, string songUrl, string urlArtist) info)
+    {
         string chars = "\\/:*?\"<>|";
         char[] newNameArtist = info.artist.ToCharArray();
 
@@ -115,14 +123,11 @@ class Program
 
         string folderArtist = Path.Combine(storageFolderArtist, new string(newNameArtist));
 
-        DownloadSong.Download(info.songUrl, folder);
         AllArtistsSongs.Dowloads(info.urlArtist, folderArtist);
 
-
-        ZipFile.CreateFromDirectory(folder, $"{folder}.zip");
         ZipFile.CreateFromDirectory(folderArtist, $"{folderArtist}.zip");
 
-        return ($"{folder}.zip", $"{folderArtist}.zip");
+        return $"{folderArtist}.zip";
     }
 
     private static async Task<bool> SendLargeFileAsync(long chatId, string filePath, string caption)
@@ -155,7 +160,7 @@ class Program
                         await _botClient.SendDocumentAsync(
                             chatId: chatId,
                             document: new InputFileStream(partStream, $"{Path.GetFileName(filePath)}.part{partNumber}"),
-                            caption: partNumber == 1 ? $"Файл {Path.GetFileName(filePath)} (часть {partNumber})" : "");
+                            caption: $"{Path.GetFileName(filePath)} часть {partNumber}");
                     }
 
                     System.IO.File.Delete(partPath);
@@ -171,6 +176,7 @@ class Program
             return false;
         }
     }
+    
     public static async Task<bool> SendFileAsync(long chatId, string filePath, string caption = "")
     {
         try

@@ -14,7 +14,7 @@ public class AllArtistsSongs
         {
             Console.WriteLine(item);
             Console.WriteLine(item.songName);
-            DownloadSong.Download(item.songUrl,folder);
+            DownloadSong.Download(item,folder);
         }
     }
 }

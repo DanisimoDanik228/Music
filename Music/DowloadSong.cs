@@ -1,8 +1,10 @@
-﻿using System;
+﻿using OpenQA.Selenium;
+using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium.Support.UI;
+using System;
 using System.IO;
 using System.Threading;
-using OpenQA.Selenium;
-using OpenQA.Selenium.Chrome;
+using InfoSong = (string artist, string songName, string songUrl, string urlArtist);
 
 public class DownloadSong
 {
@@ -43,14 +45,18 @@ public class DownloadSong
         return new ChromeDriver(options);
     }
 
-    public static void Download(string songUrl, string folder)
+    public static void Download(InfoSong info, string folder)
     {
         var driver = SetupDriver(folder);
         try
         {
-            driver.Navigate().GoToUrl(songUrl);
+            int currentCount = Directory.GetFiles(folder, "*.mp3").Length;
+            driver.Navigate().GoToUrl(info.songUrl);
 
-            Thread.Sleep(2000);
+            while (currentCount + 1 != Directory.GetFiles(folder, "*.mp3").Length)
+            {
+                Thread.Sleep(500);
+            }
 
             Console.WriteLine($"File save in: {folder}");
         }

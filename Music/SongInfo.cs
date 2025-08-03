@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
+using InfoSong = (string artist, string songName, string songUrl, string urlArtist);
 public class SongInfo
 {
     static IWebDriver SetupDriver()
@@ -65,7 +66,7 @@ public class SongInfo
     {
         return $"https://sefon.pro/search/{songName.Replace(" ", "%20")}";
     }
-    public static List<(string artist, string songName, string songUrl, string urlArtist)> FindSongsInfo(string url, int count)
+    public static List<InfoSong> FindSongsInfo(string url, int count)
     {
         var driver = SetupDriver();
         try
