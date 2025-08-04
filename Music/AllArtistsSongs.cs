@@ -8,7 +8,7 @@ public class AllArtistsSongs
 {
     public static void Dowloads(string urlArtist,string folder)
     {
-        var info = SongInfo.FindSongsInfo(urlArtist,10);
+        var info = SongInfo.FindSongsInfo(urlArtist,3);
 
         foreach (var item in info)
         {

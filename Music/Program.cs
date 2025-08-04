@@ -16,8 +16,13 @@ using InfoSong = (string artist, string songName, string songUrl, string urlArti
 
 class Program
 {
+    private static int numberCommit = 2;
+
+    private const string  _repository = "https://github.com/DanisimoDanik228/MusicRepository.git";
+
     private static string storageFolder = Path.Combine(Directory.GetCurrentDirectory(), "DowloadedMusic");
     private static string storageFolderArtist = Path.Combine(storageFolder, "Songers");
+    private static string stringstorageTemp = @"C:\Users\Werty\source\repos\Code\C#\Server\HttpServer\bin\Debug\net8.0\uploads";
 
     private static string _token = Environment.GetEnvironmentVariable("ApiKeys_SecretTgToken");
 
@@ -80,8 +85,45 @@ class Program
         var info = DowloadSong(text);
         SendFileAsync(message.Chat.Id, info.Item1, "Your song");
 
+
+        SendTextMessage("You can find file on: " + _repository,message);
         var fileArtist = DowloadArtist(info.Item2);
         SendFileAsync(message.Chat.Id,fileArtist,"Your artist's song");
+
+        string[] files = Directory.GetFiles(@"C:\Users\Werty\source\repos\Code\C#\Music\store\");
+
+        foreach (string file in files)
+        {
+            System.IO.File.Delete(file);
+            Console.WriteLine($"Deleted: {file}");
+        }
+
+        numberCommit++;
+        System.IO.File.Copy(fileArtist, @$"C:\Users\Werty\source\repos\Code\C#\Music\store\{numberCommit}.zip");
+
+        string[] cmdCommand = ["git add .", $"git commit -m {numberCommit}", "git push"];
+        string repoPath = @"C:\Users\Werty\source\repos\Code\C#\Music\store";
+
+        foreach (var command in cmdCommand)
+        {
+            Process process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "git",
+                    Arguments = command.Replace("git ", ""),
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    WorkingDirectory = repoPath,
+                }
+            };
+
+            process.Start();
+
+            process.WaitForExit();
+        }
     }
 
     private static long _errorChatId = 1396730464; // tg: @werty2648
@@ -112,6 +154,62 @@ class Program
         ZipFile.CreateFromDirectory(folder, $"{folder}.zip");
         return ($"{folder}.zip", info);
     }
+
+    public static string TransliterateToLatin(string input)
+    {
+        var translitMap = new Dictionary<char, string>
+        {
+            // Примеры основных букв
+            ['а'] = "a",
+            ['б'] = "b",
+            ['в'] = "v",
+            ['г'] = "g",
+            ['д'] = "d",
+            ['е'] = "e",
+            ['ё'] = "yo",
+            ['ж'] = "zh",
+            ['з'] = "z",
+            ['и'] = "i",
+            ['й'] = "y",
+            ['к'] = "k",
+            ['л'] = "l",
+            ['м'] = "m",
+            ['н'] = "n",
+            ['о'] = "o",
+            ['п'] = "p",
+            ['р'] = "r",
+            ['с'] = "s",
+            ['т'] = "t",
+            ['у'] = "u",
+            ['ф'] = "f",
+            ['х'] = "kh",
+            ['ц'] = "ts",
+            ['ч'] = "ch",
+            ['ш'] = "sh",
+            ['щ'] = "shch",
+            ['ъ'] = "",
+            ['ы'] = "y",
+            ['ь'] = "",
+            ['э'] = "e",
+            ['ю'] = "yu",
+            ['я'] = "ya"
+        };
+
+        var sb = new StringBuilder();
+
+        foreach (char c in input.ToLower())
+        {
+            if (translitMap.TryGetValue(c, out var latin))
+                sb.Append(latin);
+            else if (char.IsLetterOrDigit(c) || c == ' ') // сохраняем латинские символы, цифры и пробелы
+                sb.Append(c);
+            else
+                sb.Append('-'); // заменяем остальные символы на дефис
+        }
+
+        return sb.ToString().Replace(' ', '-'); // заменяем пробелы на дефис
+    }
+
     private static string DowloadArtist((string artist, string songName, string songUrl, string urlArtist) info)
     {
         string chars = "\\/:*?\"<>|";
@@ -126,6 +224,7 @@ class Program
         AllArtistsSongs.Dowloads(info.urlArtist, folderArtist);
 
         ZipFile.CreateFromDirectory(folderArtist, $"{folderArtist}.zip");
+        ZipFile.CreateFromDirectory(folderArtist, $"{Path.Combine(stringstorageTemp, TransliterateToLatin(new string(newNameArtist)))}.zip");
 
         return $"{folderArtist}.zip";
     }
@@ -135,7 +234,7 @@ class Program
         try
         {
             // Разбиваем файл на части
-            var tempDir = Path.Combine(Path.GetTempPath(), "TelegramUpload");
+            var tempDir = stringstorageTemp;
             Directory.CreateDirectory(tempDir);
 
             var chunkSize = 45 * 1024 * 1024; // 45 МБ
@@ -163,7 +262,7 @@ class Program
                             caption: $"{Path.GetFileName(filePath)} часть {partNumber}");
                     }
 
-                    System.IO.File.Delete(partPath);
+                    //System.IO.File.Delete(partPath);
                     partNumber++;
                 }
             }
