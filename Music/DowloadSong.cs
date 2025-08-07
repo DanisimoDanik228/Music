@@ -3,6 +3,8 @@ using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
 using System;
 using System.IO;
+using System.Net;
+using System.Reflection;
 using System.Threading;
 using InfoSong = (string artist, string songName, string songUrl, string urlArtist);
 
@@ -45,20 +47,35 @@ public class DownloadSong
         return new ChromeDriver(options);
     }
 
-    public static void Download(InfoSong info, string folder)
+    private static string CreateFinalNameSong(InfoSong info) => $"{info.artist} - {info.songName}";
+
+    private const string _title = "";//"Werty.ltd";
+
+    public static string Download(InfoSong info, string folder)
     {
-        var driver = SetupDriver(folder);
+        string tempFolderToDowload = Path.Combine(folder, "temp");
+        var driver = SetupDriver(tempFolderToDowload);
         try
         {
-            int currentCount = Directory.GetFiles(folder, "*.mp3").Length;
+            int currentCount = Directory.GetFiles(tempFolderToDowload, "*.mp3").Length;
             driver.Navigate().GoToUrl(info.songUrl);
 
-            while (currentCount + 1 != Directory.GetFiles(folder, "*.mp3").Length)
-            {
+            while (currentCount + 1 != Directory.GetFiles(tempFolderToDowload, "*.mp3").Length)
                 Thread.Sleep(500);
-            }
+
+            string finalPath = Directory.GetFiles(tempFolderToDowload, "*.mp3").First();
+
+            var file = TagLib.File.Create(finalPath);
+            file.Tag.Title = info.songName;
+            file.Save();
+
+            var finalStorage = Path.Combine(folder, CreateFinalNameSong(info));
+            System.IO.File.Copy(finalPath, finalStorage);
+            System.IO.File.Delete(finalPath);
 
             Console.WriteLine($"File save in: {folder}");
+
+            return finalStorage;
         }
         catch (Exception ex)
         {
@@ -68,5 +85,7 @@ public class DownloadSong
         {
             driver.Quit();
         }
+
+        return "";
     }
 }

@@ -14,15 +14,22 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 using InfoSong = (string artist, string songName, string songUrl, string urlArtist);
 
-class Program
+partial class Program
 {
-    private static string storageFolder = Path.Combine(Directory.GetCurrentDirectory(), "DowloadedMusic");
-    private static string storageFolderArtist = Path.Combine(storageFolder, "Songers");
-    private static string stringstorageTemp = @"C:\Users\Werty\source\repos\Code\C#\Server\HttpServer\bin\Debug\net8.0\uploads";
+    private static string currentDir = Directory.GetCurrentDirectory();
+
+    private static string stringStorageDowloadMusic = Path.Combine(currentDir, "DowloadedMusic");
+    private static string stringStorageDowloadMusicArtist = Path.Combine(stringStorageDowloadMusic, "Artist");
+    private static string stringStorageServer = @"C:\Users\Werty\source\repos\Code\C#\Server\HttpServer\bin\Debug\net8.0\uploads";
 
     private static string _token = Environment.GetEnvironmentVariable("ApiKeys_SecretTgToken");
 
+    private static long _errorChatId = 1396730464; // tg: @werty2648 
+
     private static TelegramBotClient _botClient;
+
+    private static string CurrentTime() => DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss-fff");
+    
     static async Task Main(string[] args)
     {
         Console.OutputEncoding = Encoding.UTF8;
@@ -49,6 +56,7 @@ class Program
 
         Console.ReadLine();
         cts.Cancel();
+
     }
 
     [Obsolete]
@@ -78,55 +86,51 @@ class Program
             return;
         }
 
-        var songInfo = DowloadSong(text);
-        SendFileAsync(message.Chat.Id, Directory.GetFiles(songInfo.folderSong).First());
 
-        SendTextMessage("Artist Songs",message);
+        string idFolder = Path.Combine(stringStorageDowloadMusic, message.Chat.Id.ToString());
+        if (!Directory.Exists(idFolder))
+            Directory.CreateDirectory(idFolder);
 
-        var fileArtist = DowloadArtist(songInfo.info);
-        var files = GetFilesInfo(storageFolderArtist + "\\" + songInfo.info.artist);
+        string timeFolder = Path.Combine(idFolder, CurrentTime());
+        if (!Directory.Exists(timeFolder))
+            Directory.CreateDirectory(timeFolder);
+
+
+        var fullSongInfo = GetSongInfo(text,timeFolder);
+        var fullPath = DownloadSong.Download(fullSongInfo, timeFolder);
+
+        var musicName = Path.GetFileName(fullPath);
+        SendFileAsync(message.Chat.Id, fullPath);
+        CopyToUploadsStorage(musicName, timeFolder, stringStorageServer);
+
+
+        string artistFolder = Path.Combine(timeFolder, "Songer");
+        if (!Directory.Exists(artistFolder))
+            Directory.CreateDirectory(artistFolder);
+
+
+        DowloadArtist(fullSongInfo, artistFolder);
+        var files = Directory.GetFiles(artistFolder);
         foreach (var file in files)
-            SendFileAsync(message.Chat.Id, file.Name);
-    }
-    private static (string Name, long Size)[] GetFilesInfo(string folderPath)
-    {
-        var files = Directory.GetFiles(folderPath);
-        var filesInfo = new (string Name, long Size)[files.Length];
-
-        for (int i = 0; i < files.Length; i++)
         {
-            var fileInfo = new FileInfo(files[i]);
-            filesInfo[i] = (files[i], fileInfo.Length);
+            SendFileAsync(message.Chat.Id, file);
+            CopyToUploadsStorage(Path.GetFileName(file), artistFolder, stringStorageServer);
         }
-
-        return filesInfo;
     }
-    private static long _errorChatId = 1396730464; // tg: @werty2648
-    private static async Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
+    private static void CopyToUploadsStorage(string nameSong,string sourceFolder, string destFolder)
     {
-        var errorMessage = exception switch
-        {
-            ApiRequestException apiRequestException
-                => $"Ошибка API Telegram:\n[{apiRequestException.ErrorCode}]\n{apiRequestException.Message}",
-            _ => exception.ToString()
-        };
+        string source = Path.Combine(sourceFolder, nameSong);
+        string destination = Path.Combine(destFolder, nameSong);
 
-        Console.WriteLine(errorMessage, botClient);
-
-        await botClient.SendTextMessageAsync(
-            chatId: _errorChatId,
-            text: errorMessage,
-            cancellationToken: cancellationToken);
+        if (!System.IO.File.Exists(destination))
+            System.IO.File.Copy(source, destination);
     }
-    private static (string folderSong,InfoSong info) DowloadSong(string name)
+    private static InfoSong GetSongInfo(string name, string timeFolder)
     {
         var urlSong = SongInfo.UbgradeUrl(name);
         var info = SongInfo.FindSongsInfo(urlSong, 1).First();
 
-        string folder = Path.Combine(storageFolder, info.songName);
-        DownloadSong.Download(info, folder);
-
-        return (folder, info);
+        return info;
     }
 
     public static string TransliterateToLatin(string input)
@@ -183,7 +187,7 @@ class Program
         return sb.ToString().Replace(' ', '-'); 
     }
 
-    private static string DowloadArtist(InfoSong info)
+    private static void DowloadArtist(InfoSong info, string folderToDowload)
     {
         string chars = "\\/:*?\"<>|";
         char[] newNameArtist = info.artist.ToCharArray();
@@ -192,56 +196,9 @@ class Program
             if (chars.Contains(newNameArtist[i]))
                 newNameArtist[i] = '_';
 
-        string folderArtist = Path.Combine(storageFolderArtist, new string(newNameArtist));
-
-        AllArtistsSongs.Dowloads(info.urlArtist, folderArtist);
-
-        return folderArtist;
+        AllArtistsSongs.Dowloads(info.urlArtist, folderToDowload);
     }
 
-    private static async Task<bool> SendLargeFileAsync(long chatId, string filePath, string caption)
-    {
-        try
-        {
-            var tempDir = stringstorageTemp;
-            Directory.CreateDirectory(tempDir);
-
-            var chunkSize = 45 * 1024 * 1024; // 45 МБ
-            var partNumber = 1;
-
-            await using (var inputStream = System.IO.File.OpenRead(filePath))
-            {
-                var buffer = new byte[chunkSize];
-                int bytesRead;
-
-                while ((bytesRead = await inputStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
-                {
-                    var partPath = Path.Combine(tempDir, $"{Path.GetFileName(filePath)}.part{partNumber}");
-                    await using (var partStream = System.IO.File.Create(partPath))
-                    {
-                        await partStream.WriteAsync(buffer, 0, bytesRead);
-                    }
-
-                    await using (var partStream = System.IO.File.OpenRead(partPath))
-                    {
-                        await _botClient.SendDocumentAsync(
-                            chatId: chatId,
-                            document: new InputFileStream(partStream, $"{Path.GetFileName(filePath)}.part{partNumber}"),
-                            caption: $"{Path.GetFileName(filePath)} часть {partNumber}");
-                    }
-
-                    partNumber++;
-                }
-            }
-
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Ошибка при отправке большого файла: {ex.Message}");
-            return false;
-        }
-    }
     
     public static async Task<bool> SendFileAsync(long chatId, string filePath, string caption = "")
     {
@@ -260,7 +217,7 @@ class Program
             }
             else
             {
-                return await SendLargeFileAsync(chatId, filePath, caption);
+                return false;
             }
         }
         catch (Exception ex)
@@ -275,5 +232,21 @@ class Program
         await _botClient.SendTextMessageAsync(
             chatId: message.Chat.Id,
             text: text);
+    }
+    private static async Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
+    {
+        var errorMessage = exception switch
+        {
+            ApiRequestException apiRequestException
+                => $"Ошибка API Telegram:\n[{apiRequestException.ErrorCode}]\n{apiRequestException.Message}",
+            _ => exception.ToString()
+        };
+
+        Console.WriteLine(errorMessage, botClient);
+
+        await botClient.SendTextMessageAsync(
+            chatId: _errorChatId,
+            text: errorMessage,
+            cancellationToken: cancellationToken);
     }
 }

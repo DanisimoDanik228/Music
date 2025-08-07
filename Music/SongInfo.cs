@@ -40,10 +40,10 @@ public class SongInfo
         string artist = parts[0].Trim();
         string song = parts.Length > 1 ? parts[1].Trim() : "";
         string urlArtist = h1.FindElement(By.CssSelector("a")).GetAttribute("href");
-        return (artist, song, urlArtist);
+        return (artist, song + ".mp3", urlArtist);
     }
 
-    static (string artist, string song, string songUrl, string urlArtist) FindApi(string url)
+    static InfoSong FindApi(string url)
     {
         var driver = SetupDriver();
         try
@@ -79,9 +79,7 @@ public class SongInfo
 
             List<(string artist, string songName, string songUrl, string urlArtist)> res = new();
 
-            count *= 2;
-
-            for (int i = 0; i < count && i < songPages.Count(); i += 2)
+            for (int i = 0; i < count * 2 && i < songPages.Count(); i += 2)
                 res.Add(FindApi(songPages[i].GetAttribute("href")));
 
             return res;
