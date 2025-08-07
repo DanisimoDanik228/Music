@@ -16,10 +16,6 @@ using InfoSong = (string artist, string songName, string songUrl, string urlArti
 
 class Program
 {
-    private static int numberCommit = 2;
-
-    private const string  _repository = "https://github.com/DanisimoDanik228/MusicRepository.git";
-
     private static string storageFolder = Path.Combine(Directory.GetCurrentDirectory(), "DowloadedMusic");
     private static string storageFolderArtist = Path.Combine(storageFolder, "Songers");
     private static string stringstorageTemp = @"C:\Users\Werty\source\repos\Code\C#\Server\HttpServer\bin\Debug\net8.0\uploads";
@@ -82,50 +78,29 @@ class Program
             return;
         }
 
-        var info = DowloadSong(text);
-        SendFileAsync(message.Chat.Id, info.Item1, "Your song");
+        var songInfo = DowloadSong(text);
+        SendFileAsync(message.Chat.Id, Directory.GetFiles(songInfo.folderSong).First());
 
+        SendTextMessage("Artist Songs",message);
 
-        SendTextMessage("You can find file on: " + _repository,message);
-        var fileArtist = DowloadArtist(info.Item2);
-        SendFileAsync(message.Chat.Id,fileArtist,"Your artist's song");
-
-        string[] files = Directory.GetFiles(@"C:\Users\Werty\source\repos\Code\C#\Music\store\");
-
-        foreach (string file in files)
-        {
-            System.IO.File.Delete(file);
-            Console.WriteLine($"Deleted: {file}");
-        }
-
-        numberCommit++;
-        System.IO.File.Copy(fileArtist, @$"C:\Users\Werty\source\repos\Code\C#\Music\store\{numberCommit}.zip");
-
-        string[] cmdCommand = ["git add .", $"git commit -m {numberCommit}", "git push"];
-        string repoPath = @"C:\Users\Werty\source\repos\Code\C#\Music\store";
-
-        foreach (var command in cmdCommand)
-        {
-            Process process = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "git",
-                    Arguments = command.Replace("git ", ""),
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    WorkingDirectory = repoPath,
-                }
-            };
-
-            process.Start();
-
-            process.WaitForExit();
-        }
+        var fileArtist = DowloadArtist(songInfo.info);
+        var files = GetFilesInfo(storageFolderArtist + "\\" + songInfo.info.artist);
+        foreach (var file in files)
+            SendFileAsync(message.Chat.Id, file.Name);
     }
+    private static (string Name, long Size)[] GetFilesInfo(string folderPath)
+    {
+        var files = Directory.GetFiles(folderPath);
+        var filesInfo = new (string Name, long Size)[files.Length];
 
+        for (int i = 0; i < files.Length; i++)
+        {
+            var fileInfo = new FileInfo(files[i]);
+            filesInfo[i] = (files[i], fileInfo.Length);
+        }
+
+        return filesInfo;
+    }
     private static long _errorChatId = 1396730464; // tg: @werty2648
     private static async Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
     {
@@ -143,7 +118,7 @@ class Program
             text: errorMessage,
             cancellationToken: cancellationToken);
     }
-    private static (string,InfoSong) DowloadSong(string name)
+    private static (string folderSong,InfoSong info) DowloadSong(string name)
     {
         var urlSong = SongInfo.UbgradeUrl(name);
         var info = SongInfo.FindSongsInfo(urlSong, 1).First();
@@ -151,15 +126,13 @@ class Program
         string folder = Path.Combine(storageFolder, info.songName);
         DownloadSong.Download(info, folder);
 
-        ZipFile.CreateFromDirectory(folder, $"{folder}.zip");
-        return ($"{folder}.zip", info);
+        return (folder, info);
     }
 
     public static string TransliterateToLatin(string input)
     {
         var translitMap = new Dictionary<char, string>
         {
-            // Примеры основных букв
             ['а'] = "a",
             ['б'] = "b",
             ['в'] = "v",
@@ -201,16 +174,16 @@ class Program
         {
             if (translitMap.TryGetValue(c, out var latin))
                 sb.Append(latin);
-            else if (char.IsLetterOrDigit(c) || c == ' ') // сохраняем латинские символы, цифры и пробелы
+            else if (char.IsLetterOrDigit(c) || c == ' ')
                 sb.Append(c);
             else
-                sb.Append('-'); // заменяем остальные символы на дефис
+                sb.Append('-'); 
         }
 
-        return sb.ToString().Replace(' ', '-'); // заменяем пробелы на дефис
+        return sb.ToString().Replace(' ', '-'); 
     }
 
-    private static string DowloadArtist((string artist, string songName, string songUrl, string urlArtist) info)
+    private static string DowloadArtist(InfoSong info)
     {
         string chars = "\\/:*?\"<>|";
         char[] newNameArtist = info.artist.ToCharArray();
@@ -223,17 +196,13 @@ class Program
 
         AllArtistsSongs.Dowloads(info.urlArtist, folderArtist);
 
-        ZipFile.CreateFromDirectory(folderArtist, $"{folderArtist}.zip");
-        ZipFile.CreateFromDirectory(folderArtist, $"{Path.Combine(stringstorageTemp, TransliterateToLatin(new string(newNameArtist)))}.zip");
-
-        return $"{folderArtist}.zip";
+        return folderArtist;
     }
 
     private static async Task<bool> SendLargeFileAsync(long chatId, string filePath, string caption)
     {
         try
         {
-            // Разбиваем файл на части
             var tempDir = stringstorageTemp;
             Directory.CreateDirectory(tempDir);
 
@@ -253,7 +222,6 @@ class Program
                         await partStream.WriteAsync(buffer, 0, bytesRead);
                     }
 
-                    // Отправляем часть
                     await using (var partStream = System.IO.File.OpenRead(partPath))
                     {
                         await _botClient.SendDocumentAsync(
@@ -262,7 +230,6 @@ class Program
                             caption: $"{Path.GetFileName(filePath)} часть {partNumber}");
                     }
 
-                    //System.IO.File.Delete(partPath);
                     partNumber++;
                 }
             }
@@ -282,7 +249,6 @@ class Program
         {
             var fileSize = new FileInfo(filePath).Length;
 
-            // Если файл меньше 50 МБ - отправляем напрямую
             if (fileSize <= 50 * 1024 * 1024)
             {
                 await using var stream = System.IO.File.OpenRead(filePath);
@@ -292,7 +258,6 @@ class Program
                     caption: caption);
                 return true;
             }
-            // Если файл больше 50 МБ - используем альтернативный метод
             else
             {
                 return await SendLargeFileAsync(chatId, filePath, caption);
