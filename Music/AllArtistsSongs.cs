@@ -3,19 +3,29 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Music;
 
-public class AllArtistsSongs
+
+namespace MusicBot
 {
-    public static void Dowloads(string urlArtist,string folder)
+    public class AllArtistsSongs
     {
-        var info = SongInfo.FindSongsInfo(urlArtist,3);
-
-        foreach (var item in info)
+        private const int _countSongForArtist = 20;
+        public static List<string> Dowloads(string urlArtist, string folder, string tempArtistFolder)
         {
-            Console.WriteLine(item);
-            Console.WriteLine(item.songName);
-            DownloadSong.Download(item,folder);
+            var info = SongInfo.FindSongsInfo(urlArtist, _countSongForArtist);
+            List<string> res = new();
+
+            foreach (var item in info)
+            {
+                Console.WriteLine(item);
+                Console.WriteLine(item.songName);
+                var path = DownloadSong.Download(item, folder, tempArtistFolder);
+                res.Add(path);
+            }
+
+            return res;
         }
     }
-}
 
+}
