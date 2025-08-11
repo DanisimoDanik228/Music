@@ -29,7 +29,10 @@ namespace MusicBot
         private static string _token = Environment.GetEnvironmentVariable("ApiKeys_SecretTgToken");
         private static TelegramBotClient _botClient;
         private static List<Update> previousMessage;
-        private static ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup(new KeyboardButton[] {"/start"});
+        private static ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup(new KeyboardButton[] {"/start"})
+        {
+            ResizeKeyboard = true
+        };
 
         private static AbstractHandler handlerMessage = null;
         static async Task Main(string[] args)
@@ -68,6 +71,7 @@ namespace MusicBot
             {
                 if (message.Text == "/start")
                 {
+                    DictionaryKeyboardMarkup.Clear();
                     chatId = message.Chat.Id;
                     previousMessage = new List<Update>();
 

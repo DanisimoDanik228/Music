@@ -3,17 +3,29 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 
 namespace Music
 {
-    public class InfoSong(string artist, string song, string songUrl, string urlArtist, string originalNameSong = "_not def_")
+    public class InfoSong
     {
-        public string artist = artist; 
-        public string songName = song; 
-        public string songUrl = songUrl; 
-        public string urlArtist = urlArtist;
-        public string originalNameSong = originalNameSong;
-
+        public InfoSong(string artist, string song, string songUrl, string urlArtist, string originalNameSong = "_not def_")
+        {        
+            this.artist = artist;
+            this.songName = song;
+            this.songUrl = songUrl;
+            this.urlArtist = urlArtist;
+            this.originalNameSong = originalNameSong;
+        }
+        public InfoSong()
+        {
+        }
+        public string artist; 
+        public string songName; 
+        public string songUrl; 
+        public string urlArtist;
+        public string originalNameSong;
+        
         public override string ToString()
         {
             return $"{originalNameSong}";

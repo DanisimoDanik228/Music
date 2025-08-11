@@ -8,6 +8,10 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
+using System.Xml.Serialization;
+using TagLib.Ape;
+using TagLib.Mpeg;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
@@ -26,10 +30,16 @@ namespace Music.Pattern
 
     public abstract class AbstractHandler : IHandler
     {
+        public static Dictionary<string, string> chosenReplyMarkup = new();
+
         public ITelegramBotClient _botClient;
         public const string _urlWebStorage = "http://10.147.18.220:8080/";
         public const long _errorChatId = 1396730464; // tg: @werty2648 
         public readonly long _chatId;
+
+
+        public const string groupNameSong = "song_names";
+        public const string groupSongOrArtist= "song_artist";
 
         public IHandler _nextHandler { get; private set; }
 
@@ -85,61 +95,111 @@ namespace Music.Pattern
         {
         }
 
-        private static bool IsSongName(List<Update> previousMessage)
+
+        // list of find songs
+        private static bool IsChosenSongName(Update currentMessage)
         {
-            return (previousMessage.Any()) && (previousMessage.Last().CallbackQuery != null) && (previousMessage.Last().CallbackQuery.Data == "song");
+            if (currentMessage.CallbackQuery == null)
+                return false;
+
+            int numItem = DictionaryKeyboardMarkup.GetNumItem(currentMessage);
+
+            return DictionaryKeyboardMarkup.GetNameGroup(numItem) == groupNameSong;
+        }
+
+
+        // text message of song name for search
+        private static bool IsSongName(Update current,List<Update> previousMessage)
+        {
+            if (!previousMessage.Any() || current.Message == null || previousMessage.Last().CallbackQuery== null)
+                return false;
+
+            int numItem = DictionaryKeyboardMarkup.GetNumItem(previousMessage.Last());
+
+            return DictionaryKeyboardMarkup.GetNameGroup(numItem) == groupSongOrArtist && DictionaryKeyboardMarkup.GetData(numItem) == "song";
+        }
+
+
+        // chose "song" from["song","artist"]
+        private static bool IsChosenOptionSong(Update currentMessage)
+        {
+            if (currentMessage.CallbackQuery == null)
+                return false;
+
+            int numItem = DictionaryKeyboardMarkup.GetNumItem(currentMessage);
+
+            return DictionaryKeyboardMarkup.GetNameGroup(numItem) == groupSongOrArtist && DictionaryKeyboardMarkup.GetData(numItem) == "song";
         }
 
         public override bool Handle(Update request, List<Update> previousMessage)
         {
             try
             {
-                if (request.Message is { } message)
+                if (IsChosenSongName(request))
                 {
-                    if (IsSongName(previousMessage))
-                    {
-                        var info = SongDowloader.FindSongsInfoFromUrl(SongDowloader.CreateUrlForSearch(message.Text)).First();
-                       
-                        _botClient.SendTextMessageAsync(
-                            text: $"Find song name is {info.songName}\n" +
-                            $"Find artist name is: {info.artist}",
-                            chatId: _chatId
-                            );
+                    var numItem = DictionaryKeyboardMarkup.GetNumItem(request);
 
-                        var dowloader = new SongDowloader(Path.Combine(MainItem.directoryDowload, _chatId.ToString()));
+                    string xmlData = DictionaryKeyboardMarkup.GetData(numItem);
+                    InfoSong info = MainItem.DeSerialize(xmlData);
 
-                        var filename = dowloader.DownloadSongToFolder(info, dowloader.mainFolder);
-                        SendFileAsync(filename);
+                    var dowloader = new SongDowloader(Path.Combine(MainItem.directoryDowload, _chatId.ToString()));
 
-                        if (!System.IO.File.Exists(filename))
-                            throw new Exception("Not Found file: " + filename);
+                    var filename = dowloader.DownloadSongToFolder(info, dowloader.mainFolder);
+                    SendFileAsync(filename);
 
-                        _botClient.SendTextMessageAsync(
-                            text: $"You can see all files on the: {_urlWebStorage}",
-                            chatId: _chatId
-                        );
+                    if (!System.IO.File.Exists(filename))
+                        throw new Exception("Not Found file: " + filename);
 
-                        dowloader.CopyAllFilesToStorageServer();
+                    _botClient.SendTextMessageAsync(
+                        text: $"You can see all files on the: {_urlWebStorage}",
+                        chatId: _chatId
+                    );
 
-                        return true;
-                    }
+                    dowloader.CopyAllFilesToStorageServer();
+
+                    return true;
                 }
-                else if (request.CallbackQuery is { } callbackQuery)
+                else if (IsSongName(request, previousMessage))
                 {
-                    var data = callbackQuery.Data;
+                    var info = SongDowloader.FindSongsInfoFromUrl(SongDowloader.CreateUrlForSearch(request.Message.Text),10);
 
-                    if (data == "song")
+                    if (info.Count() == 0)
                     {
-                        _botClient.SendMessage(
+                        _botClient.SendTextMessageAsync(
                             chatId: _chatId,
-                            text: "Enter the song name"
-                            );
+                            text:"No Found Song"
+                            );    
 
                         return true;
                     }
+
+                    List<(string, string)> tempList = new();
+
+                    foreach (var item in info)
+                    {
+                        string sogInfoInString = MainItem.Serialize(item);
+                        tempList.Add((item.originalNameSong, sogInfoInString));
+                    }
+
+                    _botClient.SendTextMessageAsync(
+                        text: $"Find songs",
+                        chatId: _chatId,
+                        replyMarkup: DictionaryKeyboardMarkup.CreateInlineKeyboard(tempList, groupNameSong)
+                    );
+
+                    return true;
+                }
+                else if (IsChosenOptionSong(request))
+                {
+                    _botClient.SendMessage(
+                          chatId: _chatId,
+                          text: "Enter the song name"
+                          );
+
+                    return true;
                 }
 
-                return _nextHandler.Handle(request, previousMessage);
+                    return _nextHandler.Handle(request, previousMessage);
             }
             catch (Exception ex)
             {
@@ -156,9 +216,25 @@ namespace Music.Pattern
         {
         }
 
-        private static bool IsArtistName(List<Update> previousMessage)
+
+        // text message of artist name for search
+        private static bool IsArtistName(Update current, List<Update> previousMessage)
         {
-            return (previousMessage.Any()) && (previousMessage.Last().CallbackQuery != null) && (previousMessage.Last().CallbackQuery.Data == "artist");
+            if (!previousMessage.Any() || current.Message == null || previousMessage.Last().CallbackQuery == null)
+                return false;
+
+            int numItem = DictionaryKeyboardMarkup.GetNumItem(previousMessage.Last());
+
+            return DictionaryKeyboardMarkup.GetNameGroup(numItem) == groupSongOrArtist && DictionaryKeyboardMarkup.GetData(numItem) == "artist";
+        }
+
+
+        // chose "song" from["song","artist"]
+        private static bool IsChosenOptionArtist(Update currentMessage)
+        {
+            int numItem = DictionaryKeyboardMarkup.GetNumItem(currentMessage);
+
+            return DictionaryKeyboardMarkup.GetNameGroup(numItem) == groupSongOrArtist && DictionaryKeyboardMarkup.GetData(numItem) == "artist";
         }
 
         public override bool Handle(Update request,List<Update> previousMessage)
@@ -168,21 +244,33 @@ namespace Music.Pattern
 
                 if (request.Message is { } message)
                 {
-                    if (IsArtistName(previousMessage))
+                    if (IsArtistName(request,previousMessage))
                     {
-                        var info = SongDowloader.FindSongsInfoFromUrl(SongDowloader.CreateUrlForSearch(message.Text),20);
+                        var listOfInfo = SongDowloader.FindSongsInfoFromUrl(SongDowloader.CreateUrlForSearch(message.Text), 1);
+
+                        if (listOfInfo.Count() == 0)
+                        {
+                            _botClient.SendTextMessageAsync(
+                                text:"Not Found Artist",
+                                chatId:_chatId
+                                );
+                            return true;
+                        }
+                        
+                        var info = listOfInfo.First();
 
                         var dowloader = new SongDowloader(Path.Combine(MainItem.directoryDowload,_chatId.ToString()));
+                        
+                        _botClient.SendTextMessageAsync(
+                            text: $"Find artist name is {info.artist}",
+                            chatId: _chatId
+                            );
 
-                        foreach (var item in info)
+                        var files = dowloader.DowloadSongsArtistToFolder(info.urlArtist);
+
+                        foreach (var filename in files)
                         { 
-                            var filename = dowloader.DownloadSongToFolder(item,dowloader.mainFolderArtist);
-                            //SendFileAsync(filename);
-                            _botClient.SendTextMessageAsync(
-                                text: $"Find artist name is {item.artist}\n" +
-                                $"Find url Artist is: {item.urlArtist}",
-                                chatId: _chatId
-                                );
+                            SendFileAsync(filename);
                         }
 
                         _botClient.SendTextMessageAsync(
@@ -196,19 +284,14 @@ namespace Music.Pattern
                         return true;
                     }
                 }
-                else if (request.CallbackQuery is { } callbackQuery)
+                else if (IsChosenOptionArtist(request))
                 {
-                    var data = callbackQuery.Data;
+                    _botClient.SendMessage(
+                        chatId: _chatId,
+                        text: "Enter the artist name"
+                        );
 
-                    if (data == "artist")
-                    {
-                        _botClient.SendMessage(
-                            chatId: _chatId,
-                            text: "Enter the artist name"
-                            );
-
-                        return true;
-                    }
+                    return true;
                 }
 
                 return _nextHandler.Handle(request, previousMessage);
@@ -228,7 +311,7 @@ namespace Music.Pattern
 
         public InitHandler(ITelegramBotClient botClient, long charId) : base(botClient, charId)
         {
-            _mainInlineKeyboard = MainItem.CreateInlineKeyboard([("Song", "song"), ("Artist", "artist")]);
+            _mainInlineKeyboard = DictionaryKeyboardMarkup.CreateInlineKeyboard([("Song", "song"), ("Artist", "artist")], groupSongOrArtist);
         }
         public override bool Handle(Update request, List<Update> previousMessage)
         {
@@ -239,7 +322,7 @@ namespace Music.Pattern
                     if (message.Text == "/start")
                     {
                         _botClient.SendTextMessageAsync(
-                            chatId: message.Chat.Id,
+                            chatId: _chatId,
                             text: "Choose what do you want to find",
                             replyMarkup: _mainInlineKeyboard);
 
