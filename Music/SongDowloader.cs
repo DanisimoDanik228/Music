@@ -16,7 +16,7 @@ namespace Music
 {
     public class SongDowloader
     {
-        private const string webStorage = @"C:\Users\Werty\source\repos\Code\C#\Server\HttpServer\bin\Debug\net8.0\uploads";
+        private static string webStorage = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),"uploads") ;
         public readonly string mainFolder;
         public readonly string mainFolderArtist;
         private Stack<string> listOfMustCopyFiles;
@@ -230,10 +230,12 @@ namespace Music
             {
                 var filename = listOfMustCopyFiles.Pop();
 
+                if (!Directory.Exists(webStorage))
+                    Directory.CreateDirectory(webStorage);
                 var destinationFilename = Path.Combine(webStorage, System.IO.Path.GetFileName(filename));
 
                 if (!System.IO.File.Exists(destinationFilename))
-                    System.IO.File.Copy(filename, Path.Combine(webStorage,System.IO.Path.GetFileName(filename)));
+                    System.IO.File.Copy(filename, destinationFilename);
             }
         }
     }

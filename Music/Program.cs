@@ -18,6 +18,7 @@ using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
+using DotNetEnv;
 
 
 namespace MusicBot
@@ -39,6 +40,15 @@ namespace MusicBot
         {
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.OutputEncoding = Encoding.UTF8;
+            Console.InputEncoding = Encoding.UTF8;
+
+            if (String.IsNullOrEmpty(_token))
+            {
+                MainItem.WriteLine("Not found token in EnvironmentVariable");
+                MainItem.Write("Enter the token:");
+
+                _token = Console.ReadLine();
+            }
 
             _botClient = new TelegramBotClient(_token);
 

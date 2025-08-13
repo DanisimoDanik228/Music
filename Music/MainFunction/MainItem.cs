@@ -72,6 +72,15 @@ namespace Music.MainFunction
         public static string directoryDowload = Path.Combine(currentDir, "DowloadFiles");
         public static string CurrentTime() => DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss-fff");
 
+        public static void Write(string text) 
+        {
+            var t = Console.ForegroundColor;
+
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.Write(text);
+
+            Console.ForegroundColor = t;
+        }
         public static void WriteLine(string text)
         {
             var t = Console.ForegroundColor;
