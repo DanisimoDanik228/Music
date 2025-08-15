@@ -1,6 +1,7 @@
 ﻿using OpenQA.Selenium.DevTools.V136.DOM;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -117,5 +118,29 @@ namespace Music.MainFunction
 
         public static SongDowloaderSefon songDowloaderSefon = new(webStorage);
         public static SongDowloaderMp3Party songDowloaderMp3Party = new(webStorage);
+        public static SongDowloaderMuzofond songDowloaderMuzofond = new(webStorage);
+
+        public static List<InfoSong> GetInfoSongFromAllSource(string inputName, int count)
+        {
+            List<InfoSong> res = new();
+
+            res.AddRange(songDowloaderSefon.GetInfoSong(inputName,count));
+            res.AddRange(songDowloaderMp3Party.GetInfoSong(inputName,count));
+            res.AddRange(songDowloaderMuzofond.GetInfoSong(inputName,count));
+
+            return res;
+        }
+
+        public static string DowloadMusicFromAllSource(InfoSong info, string destinationDowloadFolder)
+        {
+            return songDowloaderMp3Party.DowloadMusic(info, destinationDowloadFolder);
+        }
+
+        public static void CopyAllFilesToStorageServerFromAllSource()
+        {
+            songDowloaderMp3Party.CopyAllFilesToStorageServer();
+            songDowloaderMuzofond.CopyAllFilesToStorageServer();
+            songDowloaderSefon.CopyAllFilesToStorageServer();
+        }
     }
 }

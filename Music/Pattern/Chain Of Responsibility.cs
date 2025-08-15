@@ -147,7 +147,7 @@ namespace Music.Pattern
                     if(!Directory.Exists(dowloadFolder))
                         Directory.CreateDirectory(dowloadFolder);
 
-                    var filename = MainItem.songDowloaderSefon.DowloadMusic(info, dowloadFolder);
+                    var filename = MainItem.DowloadMusicFromAllSource(info, dowloadFolder);
 
                     SendFileAsync(filename);
 
@@ -156,14 +156,13 @@ namespace Music.Pattern
                         chatId: _chatId
                     );
 
-                    MainItem.songDowloaderSefon.CopyAllFilesToStorageServer();
+                    MainItem.CopyAllFilesToStorageServerFromAllSource();
 
                     return true;
                 }
                 else if (IsSongName(request, previousMessage))
                 {
-                    var infoSongs = MainItem.songDowloaderMp3Party.GetInfoSong(request.Message.Text, 5);
-                    infoSongs.AddRange(MainItem.songDowloaderSefon.GetInfoSong(request.Message.Text, 5));
+                    var infoSongs = MainItem.GetInfoSongFromAllSource(request.Message.Text, 5);
 
                     if (infoSongs.Count() == 0)
                     {

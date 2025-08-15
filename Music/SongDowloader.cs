@@ -89,6 +89,7 @@ namespace Music
                 return fullPath;
             } 
         }
+
     }
 
     public class SongDowloaderSefon : AbstractSongDowloader
@@ -204,6 +205,49 @@ namespace Music
         public override string CreateUrlForSearch(string inputName)
         {
             return $"https://mp3party.net/search?q={inputName.Replace(" ", "%20")}";
+        }
+    }
+
+    public class SongDowloaderMuzofond : AbstractSongDowloader
+    {
+        public SongDowloaderMuzofond(string webStorage) : base(webStorage)
+        {
+        }
+
+        public override string CreateUrlForSearch(string inputName)
+        {
+            return $"https://muzofond.fm/search/{inputName.Replace(" ","%20")}";
+        }
+
+        public override List<InfoSong> GetInfoSong(string inputName, int count)
+        {
+            var driver = SetupDriver();
+            try
+            {
+                List<InfoSong> res = new();
+                driver.Navigate().GoToUrl(CreateUrlForSearch(inputName));
+
+                var mainSection = driver.FindElements(By.CssSelector("ul.mainSongs.unstyled.songs"));
+                var songPages = mainSection[0].FindElements(By.CssSelector("li.item"));
+
+                for (int i = 0; i < count && i < songPages.Count() && i < MaxCountSongForSearchSong; i ++)
+                {
+                    InfoSong info = new();
+
+                    info.urlArtist = "__ not def __";
+                    info.songUrl = songPages[i].FindElement(By.CssSelector("li.play")).GetAttribute("data-url");
+                    info.artist = songPages[i].FindElement(By.CssSelector("span.artist")).Text;
+                    info.songName = songPages[i].FindElement(By.CssSelector("span.track")).Text;
+
+                    res.Add(info);
+                }
+
+                return res;
+            }
+            finally
+            {
+                driver.Quit();
+            }
         }
     }
 }
