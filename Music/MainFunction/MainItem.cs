@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OpenQA.Selenium.DevTools.V136.DOM;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -70,6 +71,7 @@ namespace Music.MainFunction
     {
         public static string currentDir = Directory.GetCurrentDirectory();
         public static string directoryDowload = Path.Combine(currentDir, "DowloadFiles");
+        public static string webStorage = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "uploads");
         public static string CurrentTime() => DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss-fff");
 
         public static void Write(string text) 
@@ -112,5 +114,8 @@ namespace Music.MainFunction
 
             return info;
         }
+
+        public static SongDowloaderSefon songDowloaderSefon = new(webStorage);
+        public static SongDowloaderMp3Party songDowloaderMp3Party = new(webStorage);
     }
 }

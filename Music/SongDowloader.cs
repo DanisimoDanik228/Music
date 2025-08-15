@@ -5,165 +5,132 @@ using OpenQA.Selenium.Chrome;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using TagLib.Riff;
 using Telegram.Bot.Types;
 
 namespace Music
 {
-    public class SongDowloader
+    public abstract class AbstractSongDowloader
     {
-        private static string webStorage = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),"uploads") ;
-        public readonly string mainFolder;
-        public readonly string mainFolderArtist;
-        private Stack<string> listOfMustCopyFiles;
+        protected string webStorage;
 
-        public SongDowloader(string userFolderName)
+        protected Stack<string> dowloadedFiles;
+        protected const int MaxCountSongForSearchSong = 5;
+
+        protected AbstractSongDowloader(string webStorage)
         {
-            listOfMustCopyFiles = new Stack<string>();
-
-            if (!Directory.Exists(userFolderName))
-                Directory.CreateDirectory(userFolderName);
-
-            mainFolder = Path.Combine(userFolderName, MainItem.CurrentTime());
-            if (!Directory.Exists(mainFolder))
-                Directory.CreateDirectory(mainFolder);
-
-            mainFolderArtist = Path.Combine(mainFolder, "Artist");
-            if (!Directory.Exists(mainFolderArtist))
-                Directory.CreateDirectory(mainFolderArtist);
+            dowloadedFiles = new();
+            this.webStorage = webStorage;
         }
-        private const int MaxCountSongForSearchSong = 10;
-        private const int MaxCountSongForArtistSong = 20;
 
-
-
-        public static string CreateUrlForSearch(string songName) => $"https://sefon.pro/search/{songName.Replace(" ", "%20")}";
-        private static InfoSong GetFirstNameSong(IWebDriver driver)
+        protected void FixTitleName(string filePath, InfoSong info)
         {
-            var h1 = driver.FindElement(By.TagName("h1"));
-            string[] parts = h1.Text.Trim().Split(new[] { " - " }, 2, StringSplitOptions.None);
-            string artist = parts[0].Trim();
-            string song = parts.Length > 1 ? parts[1].Trim() : "";
-            string urlArtist = h1.FindElement(By.CssSelector("a")).GetAttribute("href");
-
-
-            return new InfoSong(
-                artist: artist, 
-                song: song + ".mp3", 
-                songUrl: null,
-                urlArtist: urlArtist);
+            var file = TagLib.File.Create(filePath);
+            file.Tag.Title = info.songName;
+            file.Tag.Artists = [info.artist];
+            file.Save();
         }
-        private static string GetFilenameFromUrl(string url)
+
+        public abstract List<InfoSong> GetInfoSong(string inputName, int count);
+        public abstract string CreateUrlForSearch(string inputName);
+        public void CopyAllFilesToStorageServer()
         {
-            var request = (HttpWebRequest)WebRequest.Create(url);
-            using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+            while (dowloadedFiles.Any())
             {
-                return Path.GetFileNameWithoutExtension(response.ResponseUri.LocalPath);
+                var filePath = dowloadedFiles.Pop();
+
+                var filename = Path.GetFileName(filePath);
+                System.IO.File.Copy(filePath ,Path.Combine(webStorage, filename));
             }
         }
+
+        public static IWebDriver SetupDriver()
+        {
+            ChromeDriverService service = ChromeDriverService.CreateDefaultService();
+            service.EnableVerboseLogging = false;
+            service.SuppressInitialDiagnosticInformation = true;
+            service.HideCommandPromptWindow = true;
+
+            ChromeOptions options = new ChromeOptions();
+
+            options.PageLoadStrategy = PageLoadStrategy.Normal;
+
+            options.AddArgument("--window-size=1920,1080");
+            options.AddArgument("--no-sandbox");
+            options.AddArgument("--headless");
+            options.AddArgument("--disable-gpu");
+            options.AddArgument("--disable-crash-reporter");
+            options.AddArgument("--disable-extensions");
+            options.AddArgument("--disable-in-process-stack-traces");
+            options.AddArgument("--disable-logging");
+            options.AddArgument("--disable-dev-shm-usage");
+            options.AddArgument("--log-level=3");
+            options.AddArgument("--output=/dev/null");
+            options.AddExcludedArgument("enable-logging");
+
+            return new ChromeDriver(options);
+        }
+        public string DowloadMusic(InfoSong info, string destinationDowloadFolder)
+        {
+            using (var client = new WebClient())
+            {
+                var filename = $"{info.artist} - {info.songName}";
+                var fullPath = Path.Combine(destinationDowloadFolder, filename) + ".mp3";
+                client.DownloadFile(info.songUrl, fullPath);
+
+                FixTitleName(fullPath,info);
+
+                return fullPath;
+            } 
+        }
+    }
+
+    public class SongDowloaderSefon : AbstractSongDowloader
+    {
+        public SongDowloaderSefon(string webStorage):base(webStorage)
+        {
+        }
+
         private static InfoSong FindApi(string url)
         {
             var driver = SetupDriver();
             try
             {
                 driver.Navigate().GoToUrl(url);
+                InfoSong info = new();
 
-                var tempInfoSong = GetFirstNameSong(driver);
+                var h1 = driver.FindElement(By.TagName("h1"));
+                string[] parts = h1.Text.Trim().Split(new[] { " - " }, 2, StringSplitOptions.None);
+                info.artist = parts[0].Trim();
+                info.songName = parts.Length > 1 ? parts[1].Trim() : "";
+                info.urlArtist = h1.FindElement(By.CssSelector("a")).GetAttribute("href");
+                info.songUrl = driver.FindElement(By.CssSelector("a.b_btn.download.no-ajix[href*='/api/']")).GetAttribute("href");
 
-                string songUrl = driver.FindElement(By.CssSelector("a.b_btn.download.no-ajix[href*='/api/']")).GetAttribute("href");
-
-                tempInfoSong.songUrl = songUrl;
-                tempInfoSong.originalNameSong = GetFilenameFromUrl(songUrl);
-                return tempInfoSong;
+                return info;
             }
             finally
             {
                 driver.Quit();
             }
         }
-        static IWebDriver SetupDriver()
-        {
-            ChromeDriverService service = ChromeDriverService.CreateDefaultService();
-            service.EnableVerboseLogging = false;
-            service.SuppressInitialDiagnosticInformation = true;
-            service.HideCommandPromptWindow = true;
-
-            ChromeOptions options = new ChromeOptions();
-
-            options.PageLoadStrategy = PageLoadStrategy.Normal;
-
-            options.AddArgument("--window-size=1920,1080");
-            options.AddArgument("--no-sandbox");
-            options.AddArgument("--headless");
-            options.AddArgument("--disable-gpu");
-            options.AddArgument("--disable-crash-reporter");
-            options.AddArgument("--disable-extensions");
-            options.AddArgument("--disable-in-process-stack-traces");
-            options.AddArgument("--disable-logging");
-            options.AddArgument("--disable-dev-shm-usage");
-            options.AddArgument("--log-level=3");
-            options.AddArgument("--output=/dev/null");
-            options.AddExcludedArgument("enable-logging");
-
-            return new ChromeDriver(options);
-        }
-        static IWebDriver SetupDriverForDowload(string downloadFolder)
-        {
-            if (!Directory.Exists(downloadFolder))
-                Directory.CreateDirectory(downloadFolder);
-
-            string fullPath = Path.GetFullPath(downloadFolder);
-
-            ChromeDriverService service = ChromeDriverService.CreateDefaultService();
-            service.EnableVerboseLogging = false;
-            service.SuppressInitialDiagnosticInformation = true;
-            service.HideCommandPromptWindow = true;
-
-            ChromeOptions options = new ChromeOptions();
-
-            options.PageLoadStrategy = PageLoadStrategy.Normal;
-
-            options.AddArgument("--window-size=1920,1080");
-            options.AddArgument("--no-sandbox");
-            options.AddArgument("--headless");
-            options.AddArgument("--disable-gpu");
-            options.AddArgument("--disable-crash-reporter");
-            options.AddArgument("--disable-extensions");
-            options.AddArgument("--disable-in-process-stack-traces");
-            options.AddArgument("--disable-logging");
-            options.AddArgument("--disable-dev-shm-usage");
-            options.AddArgument("--log-level=3");
-            options.AddArgument("--output=/dev/null");
-            options.AddExcludedArgument("enable-logging");
-
-            options.AddUserProfilePreference("download.default_directory", fullPath);
-            options.AddUserProfilePreference("download.prompt_for_download", false);
-            options.AddUserProfilePreference("disable-popup-blocking", "true");
-            options.AddUserProfilePreference("safebrowsing.enabled", "true");
-
-            return new ChromeDriver(options);
-        }
-        public static List<InfoSong> FindSongsInfoFromUrl(string urlToFind, int count = 1)
+        public override List<InfoSong> GetInfoSong(string inputName, int count)
         {
             var driver = SetupDriver();
-
             try
             {
-                driver.Navigate().GoToUrl(urlToFind);
+                List<InfoSong> res = new();
+                driver.Navigate().GoToUrl(CreateUrlForSearch(inputName));
 
                 var mainSection = driver.FindElement(By.CssSelector("div.main"));
                 var songPages = mainSection.FindElements(By.CssSelector("a[href*='/mp3/']"));
 
-                if (songPages.Count == 0)
-                    return [];
-
-                List<InfoSong> res = new();
-
-                for (int i = 0; i < count * 2 && i < songPages.Count(); i += 2)
+                for (int i = 0; i < count * 2 && i < songPages.Count() && i < 2 * MaxCountSongForSearchSong; i += 2)
                     res.Add(FindApi(songPages[i].GetAttribute("href")));
 
                 return res;
@@ -173,70 +140,70 @@ namespace Music
                 driver.Quit();
             }
         }
-        public List<string> DowloadSongsArtistToFolder(string urlArtist)
+        public override string CreateUrlForSearch(string inputName)
         {
-            var info = FindSongsInfoFromUrl(urlArtist, MaxCountSongForArtistSong);
-            List<string> res = new();
-
-            foreach (var item in info)
-            {
-                var path = DownloadSongToFolder(item, mainFolderArtist);
-                res.Add(path);
-            }
-
-            return res;
+            return $"https://sefon.pro/search/{inputName.Replace(" ", "%20")}";
         }
-        private static void FixTitleName(string filename, string name)
+    }
+
+    public class SongDowloaderMp3Party : AbstractSongDowloader
+    {
+        public SongDowloaderMp3Party(string webStorage) : base(webStorage)
         {
-            var file = TagLib.File.Create(filename);
-            file.Tag.Title = name;
-            file.Save();
         }
-        public string DownloadSongToFolder(InfoSong info, string folderToDowload)
+
+        public override List<InfoSong> GetInfoSong(string inputName, int count)
         {
-            var driver = SetupDriverForDowload(folderToDowload);
+            var driver = SetupDriver();
             try
             {
-                int currentCount = Directory.GetFiles(folderToDowload, "*.mp3").Length;
-                driver.Navigate().GoToUrl(info.songUrl);
+                List<InfoSong> res = new();
+                driver.Navigate().GoToUrl(CreateUrlForSearch(inputName));
 
-                while (currentCount + 1 != Directory.GetFiles(folderToDowload, "*.mp3").Length)
-                    Thread.Sleep(500);
+                var mainSection = driver.FindElements(By.CssSelector("div.playlist"));
+                var songPages = mainSection[0].FindElements(By.CssSelector("a[href*='/music/']"));
 
-                var dowloadedFilename = Path.Combine(folderToDowload, GetFilenameFromUrl(info.songUrl) + ".mp3");
-                //var resultFilename = Path.Combine(folderToDowload, info.songName + ".mp3");
-                //System.IO.File.Move(dowloadedFilename, resultFilename);
+                for (int i = 0; i < count * 2 && i < songPages.Count() && i < 2 * MaxCountSongForSearchSong; i +=2)
+                {
+                    InfoSong info = new();
 
-                FixTitleName(dowloadedFilename,info.songName);
+                    string fullSongName = songPages[i].Text;
 
-                listOfMustCopyFiles.Push(dowloadedFilename);
 
-                return dowloadedFilename;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error: {ex.Message}");
+                    var split = fullSongName.Split('-');
+
+                    if (split.Length < 2)
+                        split = fullSongName.Split('–', '-');
+
+                    info.artist = split[0];
+                    info.songName = split[1];
+
+                    string urlMusic = songPages[i].GetAttribute("href");
+                    string linkDowload = MakeDowloadLink(urlMusic);
+
+                    info.songUrl = linkDowload;
+                    info.urlArtist = "__ notdef __";
+
+                    res.Add(info);
+                }
+
+                return res;
             }
             finally
             {
                 driver.Quit();
             }
-
-            return "";
         }
-        public void CopyAllFilesToStorageServer()
+        private static string MakeDowloadLink(string url)
         {
-            while (listOfMustCopyFiles.Any())
-            {
-                var filename = listOfMustCopyFiles.Pop();
+            string id = url.Split('/').Last();
 
-                if (!Directory.Exists(webStorage))
-                    Directory.CreateDirectory(webStorage);
-                var destinationFilename = Path.Combine(webStorage, System.IO.Path.GetFileName(filename));
+            return $"https://dl1.mp3party.net/download/{id}";
+        }
 
-                if (!System.IO.File.Exists(destinationFilename))
-                    System.IO.File.Copy(filename, destinationFilename);
-            }
+        public override string CreateUrlForSearch(string inputName)
+        {
+            return $"https://mp3party.net/search?q={inputName.Replace(" ", "%20")}";
         }
     }
 }

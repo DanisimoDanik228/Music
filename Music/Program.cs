@@ -87,9 +87,9 @@ namespace MusicBot
 
                     var a = new InitHandler(_botClient,chatId);
                     var b = new SongNameHandler(_botClient,chatId);
-                    var c = new ArtistNameHandler(_botClient,chatId);
+                    //var c = new ArtistNameHandler(_botClient,chatId);
                     var last = new LastHandler(_botClient, chatId);
-                    a.SetNext(b).SetNext(c).SetNext(last);
+                    a.SetNext(b).SetNext(last);//.SetNext(c).SetNext(last);
 
                     handlerMessage = a;
                 }
