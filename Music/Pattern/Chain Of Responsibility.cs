@@ -31,9 +31,8 @@ namespace Music.Pattern
     public abstract class AbstractHandler : IHandler
     {
         public static Dictionary<string, string> chosenReplyMarkup = new();
-
         public ITelegramBotClient _botClient;
-        public const string _urlWebStorage = "http://10.147.18.220:8080/";
+
         public const long _errorChatId = 1396730464; // tg: @werty2648 
         public readonly long _chatId;
 
@@ -152,7 +151,7 @@ namespace Music.Pattern
                     SendFileAsync(filename);
 
                     _botClient.SendTextMessageAsync(
-                        text: $"You can see all files on the: {_urlWebStorage}",
+                        text: $"You can see all files on the: {NetworkItem._urlWebStorage}",
                         chatId: _chatId
                     );
 
@@ -275,7 +274,7 @@ namespace Music.Pattern
                         //}
 
                         _botClient.SendTextMessageAsync(
-                            text: $"You can see all files on the: {_urlWebStorage}",
+                            text: $"You can see all files on the: {NetworkItem._urlWebStorage}",
                             chatId: _chatId
                             );
 

@@ -42,6 +42,25 @@ namespace MusicBot
             Console.OutputEncoding = Encoding.UTF8;
             Console.InputEncoding = Encoding.UTF8;
 
+            if (MainItem.IsProcessRunning("HttpServer.exe"))
+            {
+                string url;
+                do
+                {
+                    Console.WriteLine("Enter webUrlStorage");
+                    url = Console.ReadLine();
+                }
+                while (await NetworkItem.PingUrl(url));
+
+                NetworkItem._urlWebStorage = url;
+            }
+            else
+            {
+                NetworkItem._urlWebStorage = $"http://{NetworkItem.GetZeroTierIp()}:{NetworkItem._Port}/";
+            }
+
+            MainItem.WriteLine("Load urlWebStorage: " + NetworkItem._urlWebStorage);
+
             if (String.IsNullOrEmpty(_token))
             {
                 MainItem.WriteLine("Not found token in EnvironmentVariable");

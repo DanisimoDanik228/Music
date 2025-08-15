@@ -1,14 +1,18 @@
 ﻿using OpenQA.Selenium.DevTools.V136.DOM;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using System.Xml.Serialization;
 using TagLib.Ape;
+using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
@@ -28,7 +32,7 @@ namespace Music.MainFunction
             int left = currentCountMembers;
             currentCountMembers += sizeGroup;
 
-            existGroup[nameGroup] = (left,left + sizeGroup - 1);
+            existGroup[nameGroup] = (left, left + sizeGroup - 1);
 
             List<InlineKeyboardButton[]> result = new();
 
@@ -75,7 +79,7 @@ namespace Music.MainFunction
         public static string webStorage = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "uploads");
         public static string CurrentTime() => DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss-fff");
 
-        public static void Write(string text) 
+        public static void Write(string text)
         {
             var t = Console.ForegroundColor;
 
@@ -99,19 +103,19 @@ namespace Music.MainFunction
             XmlSerializer serializer = new XmlSerializer(typeof(InfoSong));
             using (var stringWriter = new StringWriter())
             {
-                serializer.Serialize(stringWriter,info);
+                serializer.Serialize(stringWriter, info);
                 string infoSong = stringWriter.ToString();
-                
+
                 return infoSong;
             }
         }
         public static InfoSong DeSerialize(string xmlData)
-        { 
+        {
             XmlSerializer serializer = new XmlSerializer(typeof(InfoSong));
             InfoSong info;
 
             using (var stringReader = new StringReader(xmlData))
-                info = (InfoSong) serializer.Deserialize(stringReader);
+                info = (InfoSong)serializer.Deserialize(stringReader);
 
             return info;
         }
@@ -124,9 +128,9 @@ namespace Music.MainFunction
         {
             List<InfoSong> res = new();
 
-            res.AddRange(songDowloaderSefon.GetInfoSong(inputName,count));
-            res.AddRange(songDowloaderMp3Party.GetInfoSong(inputName,count));
-            res.AddRange(songDowloaderMuzofond.GetInfoSong(inputName,count));
+            res.AddRange(songDowloaderSefon.GetInfoSong(inputName, count));
+            res.AddRange(songDowloaderMp3Party.GetInfoSong(inputName, count));
+            res.AddRange(songDowloaderMuzofond.GetInfoSong(inputName, count));
 
             return res;
         }
@@ -141,6 +145,58 @@ namespace Music.MainFunction
             songDowloaderMp3Party.CopyAllFilesToStorageServer();
             songDowloaderMuzofond.CopyAllFilesToStorageServer();
             songDowloaderSefon.CopyAllFilesToStorageServer();
+        }
+        public static bool IsProcessRunning(string processName)
+        {
+            Process[] processes = Process.GetProcessesByName(processName);
+            return processes.Length > 0;
+        }
+    }
+
+    public static class NetworkItem
+    {
+        public const int _Port = 8080;
+        public static string _urlWebStorage;
+
+        public static IPAddress GetZeroTierIp()
+        {
+            NetworkInterface[] interfaces = NetworkInterface.GetAllNetworkInterfaces();
+
+            foreach (NetworkInterface ni in interfaces)
+            {
+                if (ni.Description.Contains("ZeroTier"))
+                {
+                    IPInterfaceProperties ipProps = ni.GetIPProperties();
+                    UnicastIPAddressInformationCollection unicastAddresses = ipProps.UnicastAddresses;
+
+                    var ip = unicastAddresses.First().Address;
+                    foreach (UnicastIPAddressInformation addr in unicastAddresses)
+                    {
+                        if (addr.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                        {
+                            return addr.Address;
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        public static async Task<bool> PingUrl(string url)
+        {
+            try
+            {
+                using (var client = new HttpClient())
+                {
+                    var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url));
+                    return response.IsSuccessStatusCode; 
+                }
+            }
+            catch
+            {
+                return false; 
+            }
         }
     }
 }

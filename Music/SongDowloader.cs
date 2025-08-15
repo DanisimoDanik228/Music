@@ -27,6 +27,9 @@ namespace Music
         {
             dowloadedFiles = new();
             this.webStorage = webStorage;
+            
+            if(!Directory.Exists(this.webStorage))
+               Directory.CreateDirectory(this.webStorage);
         }
 
         protected void FixTitleName(string filePath, InfoSong info)
@@ -46,7 +49,11 @@ namespace Music
                 var filePath = dowloadedFiles.Pop();
 
                 var filename = Path.GetFileName(filePath);
-                System.IO.File.Copy(filePath ,Path.Combine(webStorage, filename));
+
+                var destination = Path.Combine(webStorage, filename);
+
+                System.IO.File.Copy(filePath , destination);
+                MainItem.WriteLine($"File copy from: {filePath} to: {destination}");
             }
         }
 
@@ -85,6 +92,8 @@ namespace Music
                 client.DownloadFile(info.songUrl, fullPath);
 
                 FixTitleName(fullPath,info);
+
+                dowloadedFiles.Push(fullPath);
 
                 return fullPath;
             } 
