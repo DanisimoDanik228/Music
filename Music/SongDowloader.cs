@@ -91,7 +91,14 @@ namespace Music
                 var fullPath = Path.Combine(destinationDowloadFolder, filename) + ".mp3";
                 client.DownloadFile(info.songUrl, fullPath);
 
-                FixTitleName(fullPath,info);
+                try
+                { 
+                    FixTitleName(fullPath,info);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Error in FixTitleName: " + ex.Message);
+                }
 
                 dowloadedFiles.Push(fullPath);
 

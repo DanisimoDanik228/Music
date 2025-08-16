@@ -138,17 +138,34 @@ namespace Music.Pattern
                 {
                     var numItem = DictionaryKeyboardMarkup.GetNumItem(request);
 
-                    string xmlData = DictionaryKeyboardMarkup.GetData(numItem);
-                    InfoSong info = MainItem.DeSerialize(xmlData);
+                    string data = DictionaryKeyboardMarkup.GetData(numItem);
 
-                    var dowloadFolder = Path.Combine(MainItem.directoryDowload, _chatId.ToString(),MainItem.CurrentTime());
-
-                    if(!Directory.Exists(dowloadFolder))
+                    var dowloadFolder = Path.Combine(MainItem.directoryDowload, _chatId.ToString(), MainItem.CurrentTime());
+                    if (!Directory.Exists(dowloadFolder))
                         Directory.CreateDirectory(dowloadFolder);
 
-                    var filename = MainItem.DowloadMusicFromAllSource(info, dowloadFolder);
+                    if (data == "_dowload_all_")
+                    {
+                        var nameGroup = DictionaryKeyboardMarkup.GetNameGroup(numItem);
+                        var range = DictionaryKeyboardMarkup.GetRangeGroup(nameGroup);
 
-                    SendFileAsync(filename);
+                        for (int i = range.left; i <= range.right - 1; i++)
+                        {
+                            var xmlData = DictionaryKeyboardMarkup.GetData(i);
+                            InfoSong info = MainItem.DeSerialize(xmlData);
+                            var filename = MainItem.DowloadMusicFromAllSource(info, dowloadFolder);
+
+                            SendFileAsync(filename);
+                        }
+                    }
+                    else
+                    {
+                        InfoSong info = MainItem.DeSerialize(data);
+
+                        var filename = MainItem.DowloadMusicFromAllSource(info, dowloadFolder);
+
+                        SendFileAsync(filename);
+                    }
 
                     _botClient.SendTextMessageAsync(
                         text: $"You can see all files on the: {NetworkItem._urlWebStorage}",
@@ -181,6 +198,9 @@ namespace Music.Pattern
                         tempList.Add(($"{item.artist} - {item.songName}", sogInfoInString));
                     }
 
+                    tempList.Add(($"[Dowload ALL]", "_dowload_all_"));
+
+
                     _botClient.SendTextMessageAsync(
                         text: $"Find songs",
                         chatId: _chatId,
@@ -204,6 +224,7 @@ namespace Music.Pattern
             catch (Exception ex)
             {
                 Console.WriteLine("Error in SongNameHandler: " + ex.Message);
+                throw ex;
 
                 return false;
             }
@@ -335,6 +356,8 @@ namespace Music.Pattern
             catch (Exception ex)
             {
                 Console.WriteLine("Error in InitHandler: " + ex.Message);
+
+                throw ex;
 
                 return false;
             }

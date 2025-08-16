@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using System.Xml.Serialization;
 using TagLib.Ape;
+using TagLib.Mpeg;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -64,7 +65,13 @@ namespace Music.MainFunction
         {
             return int.Parse(data.CallbackQuery.Data);
         }
+        public static (int left, int right) GetRangeGroup(string nameGroup)
+        {
+            if (!existGroup.ContainsKey(nameGroup))
+                throw new ArgumentException($"This group {nameGroup} dont exist");
 
+            return existGroup[nameGroup];
+        }
         public static void Clear()
         {
             existGroup.Clear();
@@ -76,7 +83,7 @@ namespace Music.MainFunction
     {
         public static string currentDir = Directory.GetCurrentDirectory();
         public static string directoryDowload = Path.Combine(currentDir, "DowloadFiles");
-        public static string webStorage = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "uploads");
+        public static string webStorage = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ServerMusic", "uploads");
         public static string CurrentTime() => DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss-fff");
 
         public static void Write(string text)
@@ -151,8 +158,29 @@ namespace Music.MainFunction
             Process[] processes = Process.GetProcessesByName(processName);
             return processes.Length > 0;
         }
-    }
 
+        public static string MakeFingerprint(string filePathSong)
+        {
+            var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "fpcalc",
+                    Arguments = $"\"{filePathSong}\"",
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            string output = process.StandardOutput.ReadToEnd();
+            process.WaitForExit();
+
+            int fingerprintIndex = output.IndexOf("FINGERPRINT=");
+            return output.Substring(fingerprintIndex + "FINGERPRINT=".Length).Trim();
+        }
+    }
     public static class NetworkItem
     {
         public const int _Port = 8080;

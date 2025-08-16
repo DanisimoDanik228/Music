@@ -1,6 +1,8 @@
-﻿using Music;
+﻿using DotNetEnv;
+using Music;
 using Music.MainFunction;
 using Music.Pattern;
+using Music.PostgresSQL;
 using OpenQA.Selenium.DevTools.V136.Debugger;
 using OpenQA.Selenium.DevTools.V136.Network;
 using System.Diagnostics;
@@ -18,7 +20,6 @@ using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
-using DotNetEnv;
 
 
 namespace MusicBot
@@ -38,11 +39,12 @@ namespace MusicBot
         private static AbstractHandler handlerMessage = null;
         static async Task Main(string[] args)
         {
-            Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.OutputEncoding = Encoding.UTF8;
             Console.InputEncoding = Encoding.UTF8;
 
-            if (MainItem.IsProcessRunning("HttpServer.exe"))
+            //PostgresDateBase.Demo();
+
+            if (!MainItem.IsProcessRunning("HttpServer"))
             {
                 string url;
                 do
