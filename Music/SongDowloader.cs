@@ -52,8 +52,11 @@ namespace Music
 
                 var destination = Path.Combine(webStorage, filename);
 
-                System.IO.File.Copy(filePath , destination);
-                MainItem.WriteLine($"File copy from: {filePath} to: {destination}");
+                if (!System.IO.File.Exists(destination))
+                { 
+                    System.IO.File.Copy(filePath , destination);
+                    //MainItem.WriteLine($"File copy from: {filePath} to: {destination}");
+                }
             }
         }
 
@@ -106,6 +109,25 @@ namespace Music
             } 
         }
 
+
+        private static readonly char[] InvalidFileNameChars = Path.GetInvalidFileNameChars();
+        protected static string SanitizeFileName(string fileName, char replacementChar = ' ')
+        {
+            if (string.IsNullOrEmpty(fileName))
+                return fileName;
+
+            var sanitized = new StringBuilder(fileName.Length);
+
+            foreach (char c in fileName)
+            {
+                if (Array.IndexOf(InvalidFileNameChars, c) >= 0)
+                    sanitized.Append(replacementChar);
+                else
+                    sanitized.Append(c);
+            }
+
+            return sanitized.ToString();
+        }
     }
 
     public class SongDowloaderSefon : AbstractSongDowloader
@@ -123,7 +145,7 @@ namespace Music
                 InfoSong info = new();
 
                 var h1 = driver.FindElement(By.TagName("h1"));
-                string[] parts = h1.Text.Trim().Split(new[] { " - " }, 2, StringSplitOptions.None);
+                string[] parts = SanitizeFileName(h1.Text).Trim().Split(new[] { " - " }, 2, StringSplitOptions.None);
                 info.artist = parts[0].Trim();
                 info.songName = parts.Length > 1 ? parts[1].Trim() : "";
                 info.urlArtist = h1.FindElement(By.CssSelector("a")).GetAttribute("href");
@@ -144,8 +166,12 @@ namespace Music
                 List<InfoSong> res = new();
                 driver.Navigate().GoToUrl(CreateUrlForSearch(inputName));
 
-                var mainSection = driver.FindElement(By.CssSelector("div.main"));
-                var songPages = mainSection.FindElements(By.CssSelector("a[href*='/mp3/']"));
+                var mainSection = driver.FindElements(By.CssSelector("div.main"));
+
+                if (mainSection.Count == 0)
+                    return [];
+
+                var songPages = mainSection[0].FindElements(By.CssSelector("a[href*='/mp3/']"));
 
                 for (int i = 0; i < count * 2 && i < songPages.Count() && i < 2 * MaxCountSongForSearchSong; i += 2)
                     res.Add(FindApi(songPages[i].GetAttribute("href")));
@@ -178,6 +204,10 @@ namespace Music
                 driver.Navigate().GoToUrl(CreateUrlForSearch(inputName));
 
                 var mainSection = driver.FindElements(By.CssSelector("div.playlist"));
+
+                if (mainSection.Count == 0)
+                    return [];
+
                 var songPages = mainSection[0].FindElements(By.CssSelector("a[href*='/music/']"));
 
                 for (int i = 0; i < count * 2 && i < songPages.Count() && i < 2 * MaxCountSongForSearchSong; i +=2)
@@ -186,14 +216,11 @@ namespace Music
 
                     string fullSongName = songPages[i].Text;
 
+                    string[] parts = SanitizeFileName(fullSongName).Trim().Split(new[] { " - " }, 2, StringSplitOptions.None);
 
-                    var split = fullSongName.Split('-');
-
-                    if (split.Length < 2)
-                        split = fullSongName.Split('–', '-');
-
-                    info.artist = split[0];
-                    info.songName = split[1];
+                    info.artist = parts[0];
+                    if(parts.Length > 1)
+                        info.songName = parts[1];
 
                     string urlMusic = songPages[i].GetAttribute("href");
                     string linkDowload = MakeDowloadLink(urlMusic);
@@ -244,6 +271,10 @@ namespace Music
                 driver.Navigate().GoToUrl(CreateUrlForSearch(inputName));
 
                 var mainSection = driver.FindElements(By.CssSelector("ul.mainSongs.unstyled.songs"));
+
+                if (mainSection.Count == 0)
+                    return [];
+
                 var songPages = mainSection[0].FindElements(By.CssSelector("li.item"));
 
                 for (int i = 0; i < count && i < songPages.Count() && i < MaxCountSongForSearchSong; i ++)
@@ -252,8 +283,8 @@ namespace Music
 
                     info.urlArtist = "__ not def __";
                     info.songUrl = songPages[i].FindElement(By.CssSelector("li.play")).GetAttribute("data-url");
-                    info.artist = songPages[i].FindElement(By.CssSelector("span.artist")).Text;
-                    info.songName = songPages[i].FindElement(By.CssSelector("span.track")).Text;
+                    info.artist = SanitizeFileName(songPages[i].FindElement(By.CssSelector("span.artist")).Text);
+                    info.songName = SanitizeFileName(songPages[i].FindElement(By.CssSelector("span.track")).Text);
 
                     res.Add(info);
                 }
