@@ -29,7 +29,7 @@ namespace MusicBot
         private const long _errorChatId = 1396730464; // tg: @werty2648 
         private static long chatId = -1;
         private static string _token = Environment.GetEnvironmentVariable("ApiKeys_SecretTgToken");
-        private static TelegramBotClient _botClient;
+        public static TelegramBotClient _botClient;
         private static List<Update> previousMessage;
         private static ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup(new KeyboardButton[] {"/start"})
         {
@@ -198,6 +198,43 @@ namespace MusicBot
                     SendFileAsync(chatId,item);
                 }
             }
+        }
+
+        public static IEnumerable<ResponseHandler> HandleMessage(Update update)
+        {
+            if (update.Message is { } m)
+                MainItem.WriteLine($"{m.Chat.Id} : {m.Text}");
+
+            if (update.Message is { } message)
+            {
+                if (message.Text == "/start")
+                {
+                    DictionaryKeyboardMarkup.Clear();
+                    chatId = message.Chat.Id;
+                    previousMessage = new List<Update>();
+
+                    var a = new InitHandler();
+                    var b = new SongNameHandler();
+                    var c = new ChosenOptionFind();
+                    var d = new ChosenSongName();
+                    var last = new LastHandler();
+                    a.SetNext(b).SetNext(c).SetNext(d).SetNext(last);
+
+                    handlerMessage = a;
+                }
+            }
+
+            if (handlerMessage != null)
+            {
+                var result = handlerMessage.Handle(update, previousMessage);
+
+                return result;
+            }
+
+            if (previousMessage != null)
+                previousMessage.Add(update);
+
+            return null;
         }
     }
 }
