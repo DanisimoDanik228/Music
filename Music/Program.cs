@@ -24,7 +24,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace MusicBot
 {
-    partial class Program
+    public class Program
     {
         private const long _errorChatId = 1396730464; // tg: @werty2648 
         private static long chatId = -1;
@@ -37,7 +37,7 @@ namespace MusicBot
         };
 
         private static AbstractHandler handlerMessage = null;
-        static async Task Main(string[] args)
+        public static async Task Main(string[] args)
         {
             Console.OutputEncoding = Encoding.UTF8;
             Console.InputEncoding = Encoding.UTF8;
@@ -93,7 +93,7 @@ namespace MusicBot
             Console.ReadLine();
             cts.Cancel();
         }
-        private static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+        public static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {
             if (update.Message is { } m)
                 MainItem.WriteLine($"{m.Chat.Id} : {m.Text}");
@@ -106,11 +106,12 @@ namespace MusicBot
                     chatId = message.Chat.Id;
                     previousMessage = new List<Update>();
 
-                    var a = new InitHandler(_botClient,chatId);
-                    var b = new SongNameHandler(_botClient,chatId);
-                    //var c = new ArtistNameHandler(_botClient,chatId);
-                    var last = new LastHandler(_botClient, chatId);
-                    a.SetNext(b).SetNext(last);//.SetNext(c).SetNext(last);
+                    var a = new InitHandler();
+                    var b = new SongNameHandler();
+                    var c = new ChosenOptionFind();
+                    var d = new ChosenSongName();
+                    var last = new LastHandler();
+                    a.SetNext(b).SetNext(c).SetNext(d).SetNext(last);
 
                     handlerMessage = a;
                 }
@@ -120,7 +121,17 @@ namespace MusicBot
             {
                 var result = handlerMessage.Handle(update, previousMessage);
 
-                MainItem.WriteLine($"Result of handler message is {result}");
+                MainItem.WriteLine($"Result of handler message is :");
+
+
+                if (result != null)
+                { 
+                    foreach (var item in result)
+                        MainItem.WriteLine(item.ToString());
+
+                    foreach (var item in result)
+                        MakeResponse(item);
+                }
             }
 
             if (previousMessage != null)
@@ -169,6 +180,24 @@ namespace MusicBot
                 text: errorMessage,
                 replyMarkup: replyKeyboardMarkup,
                 cancellationToken: cancellationToken);
+        }
+
+        private static void MakeResponse(ResponseHandler data)
+        {
+            if(data.text != null)
+                _botClient.SendTextMessageAsync(
+                    chatId: chatId,
+                    text: data.text,
+                    replyMarkup: data.markup
+                );
+
+            if (data.files != null)
+            {
+                foreach (var item in data.files)
+                {
+                    SendFileAsync(chatId,item);
+                }
+            }
         }
     }
 }
