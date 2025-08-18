@@ -1,4 +1,5 @@
-﻿using OpenQA.Selenium.DevTools.V136.DOM;
+﻿using Music.PostgresSQL;
+using OpenQA.Selenium.DevTools.V136.DOM;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -19,6 +20,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Music.MainFunction
 {
+    using Music.PostgresSQL;
     public static class DictionaryKeyboardMarkup
     {
         private static Dictionary<string, (int left, int right)> existGroup = new();
@@ -81,6 +83,25 @@ namespace Music.MainFunction
     }
     public static class MainItem
     {
+        public static string GetUniqueFileName(string path)
+        {
+            string directory = Path.GetDirectoryName(path);
+            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(path);
+            string extension = Path.GetExtension(path);
+            string newPath = path;
+
+            int count = 1;
+
+            while (System.IO.File.Exists(newPath))
+            {
+                string tempFileName = $"{fileNameWithoutExtension} ({count}){extension}";
+                newPath = Path.Combine(directory, tempFileName);
+                count++;
+            }
+
+            return newPath;
+        }
+
         public static string currentDir = Directory.GetCurrentDirectory();
         public static string directoryDowload = Path.Combine(currentDir, "DowloadFiles");
         public static string webStorage = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ServerMusic", "uploads");
@@ -97,12 +118,12 @@ namespace Music.MainFunction
         }
         public static void WriteLine(string text)
         {
-            var t = Console.ForegroundColor;
+            var t = Console.BackgroundColor;
 
-            Console.ForegroundColor = ConsoleColor.White;
+            Console.BackgroundColor = ConsoleColor.DarkGray;
             Console.WriteLine(text);
 
-            Console.ForegroundColor = t;
+            Console.BackgroundColor = t;
         }
 
         public static string Serialize(InfoSong info)
@@ -135,9 +156,11 @@ namespace Music.MainFunction
         {
             List<InfoSong> res = new();
 
-            res.AddRange(songDowloaderSefon.GetInfoSong(inputName, count));
-            res.AddRange(songDowloaderMp3Party.GetInfoSong(inputName, count));
-            res.AddRange(songDowloaderMuzofond.GetInfoSong(inputName, count));
+            Parallel.Invoke(
+                () => res.AddRange(songDowloaderSefon.GetInfoSong(inputName, count)),
+                () => res.AddRange(songDowloaderMp3Party.GetInfoSong(inputName, count)),
+                () => res.AddRange(songDowloaderMuzofond.GetInfoSong(inputName, count))
+            );
 
             return res;
         }
@@ -180,6 +203,9 @@ namespace Music.MainFunction
             int fingerprintIndex = output.IndexOf("FINGERPRINT=");
             return output.Substring(fingerprintIndex + "FINGERPRINT=".Length).Trim();
         }
+
+        public static PostgresDateBase repo = new PostgresDateBase("Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=76127612d");
+
     }
     public static class NetworkItem
     {

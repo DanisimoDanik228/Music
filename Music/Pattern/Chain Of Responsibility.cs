@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.FileProviders;
 using Music.MainFunction;
 using Music.PostgresSQL;
+using OpenQA.Selenium.DevTools.V136.Debugger;
 using OpenQA.Selenium.DevTools.V136.WebAuthn;
 using OpenQA.Selenium.Interactions;
 using System;
@@ -98,12 +99,15 @@ namespace Music.Pattern
                         InfoSong info = MainItem.DeSerialize(xmlData);
                         var filename = MainItem.DowloadMusicFromAllSource(info, dowloadFolder);
 
-                        responseFiles.files.Add(filename);
+                        if (System.IO.File.Exists(filename))
+                        { 
+                            responseFiles.files.Add(filename);
 
-                        var item = new TextSample();
-                        item.SongName = info.songName;
-                        item.UrlDownload = info.songUrl;
-                        item.FingerPrint = MainItem.MakeFingerprint(filename);
+                            var item = new TextSample();
+                            item.SongName = info.songName;
+                            item.UrlDownload = info.songUrl;
+                            item.FingerPrint = MainItem.MakeFingerprint(filename);
+                        }
                     });
 
                     var zipFile = MainItem.GetUniqueFileName(Path.Combine(MainItem.webStorage, previousMessage.Last().Message.Text + ".zip"));

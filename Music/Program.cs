@@ -5,6 +5,7 @@ using Music.Pattern;
 using Music.PostgresSQL;
 using OpenQA.Selenium.DevTools.V136.Debugger;
 using OpenQA.Selenium.DevTools.V136.Network;
+using Sprache;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -93,7 +94,7 @@ namespace MusicBot
             Console.ReadLine();
             cts.Cancel();
         }
-        public static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+        public static async Task<IEnumerable<ResponseHandler>> HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {
             if (update.Message is { } m)
                 MainItem.WriteLine($"{m.Chat.Id} : {m.Text}");
@@ -117,12 +118,13 @@ namespace MusicBot
                 }
             }
 
+            IEnumerable<ResponseHandler> result = null;
+
             if (handlerMessage != null)
             {
-                var result = handlerMessage.Handle(update, previousMessage);
+                result = handlerMessage.Handle(update, previousMessage);
 
                 MainItem.WriteLine($"Result of handler message is :");
-
 
                 if (result != null)
                 { 
@@ -132,10 +134,13 @@ namespace MusicBot
                     foreach (var item in result)
                         MakeResponse(item);
                 }
+
             }
 
             if (previousMessage != null)
                 previousMessage.Add(update);
+
+            return result;
         }
         public static async Task<bool> SendFileAsync(long chatId, string filePath, string caption = "")
         {
@@ -181,7 +186,6 @@ namespace MusicBot
                 replyMarkup: replyKeyboardMarkup,
                 cancellationToken: cancellationToken);
         }
-
         private static void MakeResponse(ResponseHandler data)
         {
             if(data.text != null)
@@ -200,7 +204,7 @@ namespace MusicBot
             }
         }
 
-        public static IEnumerable<ResponseHandler> HandleMessage(Update update)
+        public static IEnumerable<ResponseHandler> MakeTestResponse(Update update)
         {
             if (update.Message is { } m)
                 MainItem.WriteLine($"{m.Chat.Id} : {m.Text}");
@@ -224,17 +228,17 @@ namespace MusicBot
                 }
             }
 
+            IEnumerable<ResponseHandler> result = null;
+
             if (handlerMessage != null)
             {
-                var result = handlerMessage.Handle(update, previousMessage);
-
-                return result;
+                result = handlerMessage.Handle(update, previousMessage);
             }
 
             if (previousMessage != null)
                 previousMessage.Add(update);
 
-            return null;
+            return result;
         }
     }
 }
