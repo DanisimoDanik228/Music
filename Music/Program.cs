@@ -26,7 +26,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 namespace MusicBot
 {
     public class Program
-    {
+    {//// ad
         private const long _errorChatId = 1396730464; // tg: @werty2648 
         private static long chatId = -1;
         private static string _token = Environment.GetEnvironmentVariable("ApiKeys_SecretTgToken");
