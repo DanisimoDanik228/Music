@@ -102,11 +102,6 @@ namespace Music.Pattern
                         if (System.IO.File.Exists(filename))
                         { 
                             responseFiles.files.Add(filename);
-
-                            var item = new TextSample();
-                            item.SongName = info.songName;
-                            item.UrlDownload = info.songUrl;
-                            item.FingerPrint = MainItem.MakeFingerprint(filename);
                         }
                     });
 

@@ -36,7 +36,7 @@ namespace MusicBot
         {
             ResizeKeyboard = true
         };
-
+        // comment
         private static AbstractHandler handlerMessage = null;
         public static async Task Main(string[] args)
         {
