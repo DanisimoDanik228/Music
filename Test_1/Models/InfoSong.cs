@@ -15,11 +15,11 @@
             
         }
 
-        public string artist;
-        public string songName;
-        public string songUrl;
-        public string artistUrl;
-        public string dowloadLink;
+        public string artist { get; set; }
+        public string songName { get; set; }
+        public string songUrl { get; set; }
+        public string artistUrl { get; set; }
+        public string dowloadLink { get; set; }
 
         public override string ToString()
         {

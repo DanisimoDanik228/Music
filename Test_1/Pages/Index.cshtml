@@ -1,0 +1,22 @@
+﻿@page
+@model Test_1.Pages.IndexModel
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <title>Поиск музыки</title>
+    <script src="/_framework/aspnetcore-browser-refresh.js"></script>
+
+    <link href="~/css/found-links.css" rel="stylesheet" />
+</head>
+<body>
+    <div class="container">
+        <h1>Поиск музыки</h1>
+        <form method='post'>
+            @Html.AntiForgeryToken()<input type='text' name='nameSong' class="search-input" placeholder="Название песни">
+            <button type='submit' class="search-btn">Найти</button>
+        </form>
+    </div>
+</body>
+</html>
