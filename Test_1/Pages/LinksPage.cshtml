@@ -1,0 +1,113 @@
+﻿@page
+@model Test_1.Pages.LinksPageModel
+
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Найденные ссылки</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .found-links-title {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .song-link {
+            display: block;
+            padding: 12px 15px;
+            margin: 8px 0;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            text-decoration: none;
+            color: #2980b9;
+            transition: all 0.3s ease;
+        }
+
+        .song-link:hover {
+            background: #e3f2fd;
+            border-color: #3498db;
+            transform: translateX(5px);
+        }
+
+        .actions {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-back {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-download {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h3>🎵 Найденные ссылки</h3>
+
+        <div class="links">
+            @foreach (var song in Model.Songs)
+            {
+                <a href="@song.dowloadLink" class="song-link" target="_blank">
+                    @song.artist - @song.songName
+                </a>
+                <br>
+            }
+        </div>
+
+        <div class="actions">
+            <a href="/" class="btn btn-back">← Назад</a>
+
+            <form method="get" action="/ZipPage" style="margin: 0;">
+                <button type="submit" class="btn btn-download">📦 Скачать ZIP</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

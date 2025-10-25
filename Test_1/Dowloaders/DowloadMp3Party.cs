@@ -15,12 +15,22 @@ namespace Test_1.Dowloaders
         {
             InfoSong res = new InfoSong();
 
-            res.dowloadLink = MakeDowloadLink(urlMusic);
-            res.songUrl = urlMusic;
+            // happy link ->  href="/yabanner?url=https%3A%2F%2Fdl2.mp3party.net%2Fdownload%2F8952738
+            // %3A  this :
+            // %2F  this / 
 
             var htmlContent = await httpClient.GetStringAsync(urlMusic);
             var doc = new HtmlDocument();
             doc.LoadHtml(htmlContent);
+
+            var downloadTag = doc.DocumentNode.SelectNodes("//a[contains(@class, 'c-button c-button_download js-dw-btn')]")[0];
+            var downloadLink = downloadTag.GetAttributeValue("href", "");
+            string decodedDownloadUrl = Uri.UnescapeDataString(downloadLink.Substring(downloadLink.IndexOf("https")));
+
+            res.dowloadLink = decodedDownloadUrl;
+            res.songUrl = urlMusic;
+
+
 
             var mainSection = doc.DocumentNode.SelectNodes("//div[contains(@class, 'breadcrumbs')]");
 
@@ -69,35 +79,11 @@ namespace Test_1.Dowloaders
 
             return res;
         }
-        private static string MakeDowloadLink(string url)
-        {
-            string id = url.Split('/').Last();
-
-            return $"https://dl1.mp3party.net/download/{id}";
-        }
 
         public static string CreateUrlForSearch(string inputName)
         {
             return $"https://mp3party.net/search?q={inputName.Replace(" ", "%20")}";
         }
 
-        private static readonly char[] InvalidFileNameChars = Path.GetInvalidFileNameChars();
-        private static string SanitizeFileName(string fileName, char replacementChar = ' ')
-        {
-            if (string.IsNullOrEmpty(fileName))
-                return fileName;
-
-            var sanitized = new StringBuilder(fileName.Length);
-
-            foreach (char c in fileName)
-            {
-                if (Array.IndexOf(InvalidFileNameChars, c) >= 0)
-                    sanitized.Append(replacementChar);
-                else
-                    sanitized.Append(c);
-            }
-
-            return sanitized.ToString();
-        }
     }
 }

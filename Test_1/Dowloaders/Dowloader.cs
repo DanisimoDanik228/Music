@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Net;
+using System.Text;
 using Test_1.Models;
 
 namespace Test_1.Dowloaders
@@ -10,6 +11,24 @@ namespace Test_1.Dowloaders
 
     public static class Dowloader
     {
+        private static readonly char[] InvalidFileNameChars = Path.GetInvalidFileNameChars();
+        private static string SanitizeFileName(string fileName, char replacementChar = ' ')
+        {
+            if (string.IsNullOrEmpty(fileName))
+                return fileName;
+
+            var sanitized = new StringBuilder(fileName.Length);
+
+            foreach (char c in fileName)
+            {
+                if (Array.IndexOf(InvalidFileNameChars, c) >= 0)
+                    sanitized.Append(replacementChar);
+                else
+                    sanitized.Append(c);
+            }
+
+            return sanitized.ToString();
+        }
         public static string CompresToZip(string folder)
         {
             var parentFolder = Directory.GetParent(folder).FullName;
@@ -43,15 +62,16 @@ namespace Test_1.Dowloaders
 
         public async static Task<string> DowloadFileAsync(InfoSong info, string destination)
         {
+            var safeFilename = $"{SanitizeFileName(info.artist)} - {SanitizeFileName(info.songName)}.mp3";
+            var fullPath = Path.Combine(destination, safeFilename);
+
             using (var client = new HttpClient())
             {
-                var filename = $"{info.artist} - {info.songName}";
-                var fullPath = Path.Combine(destination, filename) + ".mp3";
-
                 try
                 {
-                    // Скачивание файла
-                    byte[] fileBytes = await client.GetByteArrayAsync(info.songUrl);
+                    client.Timeout = TimeSpan.FromSeconds(20);
+                  
+                    byte[] fileBytes = await client.GetByteArrayAsync(info.dowloadLink);
                     await File.WriteAllBytesAsync(fullPath, fileBytes);
 
                     try
