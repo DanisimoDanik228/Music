@@ -5,8 +5,6 @@ namespace Test_1.Models.SiteParse
 {
     public class ParseMuzofond : IParseSite
     {
-
-        private const string urlSite = "https://muzofond.fm";
         public static async Task<List<InfoSong>> GetInfoSong(string inputName)
         {
             string searchUrl = CreateUrlForSearch(inputName);

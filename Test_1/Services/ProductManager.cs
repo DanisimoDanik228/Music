@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
+using System.Net;
+using Test_1.Core;
 using Test_1.Models;
 using Test_1.Models.Dowloaders;
 using Test_1.Models.SiteParse;
@@ -10,31 +12,39 @@ namespace Test_1.Services
     {
         public ProductManager()
         {
-            
+
         }
 
-        public async Task<(string zipFile, List<InfoSong> songs)> FindMusic(string nameSong, IConfiguration _configuration)
+        public async Task<(string zipFile,List<InfoSong> songs)> FindDownloadMusic(string nameSong)
         {
             string zipFile;
             List<InfoSong> songs;
 
-            if (_configuration["DEBUG_USE_LOCAL_DATA"] == "true")
+            if (AppSetting.DEBUG_USE_LOCAL_DATA)
             {
-                songs = Fake_SongData.Get(_configuration["DEBUG_PATH_JSON"]);
-                zipFile = _configuration["DEBUG_PATH_ZIP"];
+                songs = Fake_SongData.Get(AppSetting.DEBUG_PATH_JSON);
+                zipFile = AppSetting.DEBUG_PATH_ZIP;
             }
             else
             {
                 songs = await ParseMuzofond.GetInfoSong(nameSong);
 
-                var destinationFolder = @"C:\Users\Werty\Desktop\test\" + Guid.NewGuid().ToString();
+                string mainFolder = Path.Combine(AppSetting.PATH_STORAGE, DateTime.Now.ToString("HH-mm-ss"));
+                zipFile = mainFolder + ".zip";
 
-                Directory.CreateDirectory(destinationFolder);
+                Directory.CreateDirectory(mainFolder);
 
-                await Dowloader.DowloadFilesAsync(songs, destinationFolder);
+                await Dowloader.DowloadFilesAsync(songs, mainFolder);
 
-                zipFile = Dowloader.CompresToZip(destinationFolder);
+                Dowloader.CompresToZip(mainFolder,zipFile);
             }
+
+            if (!File.Exists(zipFile))
+                throw new FileLoadException("Failed to create file",zipFile);
+
+            var sizeBytes = new FileInfo(zipFile).Length;
+            if (sizeBytes < 1_000_000)
+                throw new WebException($"Failed to download files. Real size -> {sizeBytes}");
 
             return (zipFile, songs);
         }

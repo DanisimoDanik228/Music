@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Text;
+using System.Text.Json.Serialization;
 using Test_1.Models.Enum;
 
 namespace Test_1.Models
@@ -16,12 +17,31 @@ namespace Test_1.Models
         public string songUrl { get; set; }
         public string artistUrl { get; set; }
         public string dowloadLink { get; set; }
-        // May be nust used string
+        // May be. Must used string
         public SourseSite sourseSite { get; set; }
 
+
+        private static readonly char[] InvalidFileNameChars = Path.GetInvalidFileNameChars();
+        private static string SanitizeFileName(string fileName, char replacementChar = ' ')
+        {
+            if (string.IsNullOrEmpty(fileName))
+                return fileName;
+
+            var sanitized = new StringBuilder(fileName.Length);
+
+            foreach (char c in fileName)
+            {
+                if (Array.IndexOf(InvalidFileNameChars, c) >= 0)
+                    sanitized.Append(replacementChar);
+                else
+                    sanitized.Append(c);
+            }
+
+            return sanitized.ToString();
+        }
         public override string ToString()
         {
-            return $"{artist} __ {songName}";
+            return $"{SanitizeFileName(this.artist)} - {SanitizeFileName(this.songName)}.mp3";
         }
     }
 }

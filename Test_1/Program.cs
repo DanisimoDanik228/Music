@@ -1,8 +1,9 @@
-﻿using System;
+﻿using DotNetEnv;
+using System;
 using System.Net.Mime;
-using Test_1.Models.Dowloaders;
+using Test_1.Core;
 using Test_1.Models;
-using DotNetEnv;
+using Test_1.Models.Dowloaders;
 using Test_1.Services;
 
 namespace Test_1
@@ -26,7 +27,11 @@ namespace Test_1
             builder.Services.AddScoped<ProductManager>();
 
             Env.Load("./Core/.env");
-            builder.Configuration.AddEnvironmentVariables();
+            var configuration = new ConfigurationBuilder()
+                .AddEnvironmentVariables()
+                .Build();
+
+            AppSetting.Ctor(configuration);
 
             var app = builder.Build();
             app.UseStaticFiles();

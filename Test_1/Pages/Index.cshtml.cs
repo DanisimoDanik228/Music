@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.IO.Compression;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text.Json;
+using Test_1.Core;
 using Test_1.Models;
 using Test_1.Models.Dowloaders;
 using Test_1.Models.SiteParse;
@@ -14,12 +15,10 @@ namespace Test_1.Pages
 {
     public class IndexModel : PageModel
     {
-        private readonly IConfiguration _configuration;
         private readonly ProductManager _productManager;
 
-        public IndexModel(IConfiguration configuration, ProductManager productManager)
+        public IndexModel(ProductManager productManager)
         {
-            _configuration = configuration;
             _productManager = productManager;
         }
         public void OnGet()
@@ -35,7 +34,8 @@ namespace Test_1.Pages
             if (!ModelState.IsValid)
                 return Page();
 
-            (string zipFile, List<InfoSong> songs) = await _productManager.FindMusic(NameSong,_configuration);
+
+            (string zipFile,List<InfoSong> songs) = await _productManager.FindDownloadMusic(NameSong);
 
             // For LinkPage.cshtml
             var json = JsonSerializer.Serialize<List<InfoSong>>(songs);

@@ -1,7 +1,6 @@
 ﻿@page
 @model Test_1.Pages.LinksPageModel
 
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -33,10 +32,14 @@
             padding-bottom: 10px;
         }
 
+        .links {
+            margin-bottom: 20px;
+        }
+
         .song-link {
             display: block;
-            padding: 12px 15px;
-            margin: 8px 0;
+            padding: 10px 15px;
+            margin: 4px 0;
             background: #f8f9fa;
             border: 1px solid #e9ecef;
             border-radius: 5px;
@@ -45,11 +48,11 @@
             transition: all 0.3s ease;
         }
 
-        .song-link:hover {
-            background: #e3f2fd;
-            border-color: #3498db;
-            transform: translateX(5px);
-        }
+            .song-link:hover {
+                background: #e3f2fd;
+                border-color: #3498db;
+                transform: translateX(5px);
+            }
 
         .actions {
             margin-top: 25px;
@@ -84,12 +87,11 @@
             opacity: 0.9;
             transform: translateY(-2px);
         }
-
     </style>
 </head>
 <body>
     <div class="container">
-        <h3>🎵 Найденные ссылки</h3>
+        <h3 class="found-links-title">🎵 Найденные ссылки</h3>
 
         <div class="links">
             @foreach (var song in Model.Songs)
@@ -97,7 +99,6 @@
                 <a href="@song.dowloadLink" class="song-link" target="_blank">
                     @song.artist - @song.songName
                 </a>
-                <br>
             }
         </div>
 

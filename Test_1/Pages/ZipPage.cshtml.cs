@@ -7,11 +7,8 @@ namespace Test_1.Pages
 {
     public class ZipPageModel : PageModel
     {
-        private readonly IConfiguration _configuration;
-
-        public ZipPageModel(IConfiguration configuration)
+        public ZipPageModel()
         {
-            _configuration = configuration;
         }
         public IActionResult OnGet()
         {
