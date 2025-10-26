@@ -6,9 +6,8 @@ using System.Net;
 using System.Text;
 using Test_1.Models;
 
-namespace Test_1.Dowloaders
+namespace Test_1.Models.Dowloaders
 {
-
     public static class Dowloader
     {
         private static readonly char[] InvalidFileNameChars = Path.GetInvalidFileNameChars();

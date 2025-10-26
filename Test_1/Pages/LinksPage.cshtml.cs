@@ -12,10 +12,8 @@ namespace Test_1.Pages
         {
             if (TempData["Songs"] != null)
             {
-                string jsonData = TempData["Songs"].ToString();
-                Songs = JsonSerializer.Deserialize<List<InfoSong>>(jsonData);
-                
-                TempData.Remove("Songs");
+                string jsonData = TempData["Songs"] as string ?? "";
+                Songs = JsonSerializer.Deserialize<List<InfoSong>>(jsonData) ?? new();
             }
         }
     }

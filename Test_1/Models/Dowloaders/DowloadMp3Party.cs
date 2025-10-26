@@ -5,7 +5,7 @@ using System.Net.Http;
 using System.Text;
 using Test_1.Models;
 
-namespace Test_1.Dowloaders
+namespace Test_1.Models.Dowloaders
 {
     public class DowloadMp3Party
     {

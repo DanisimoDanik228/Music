@@ -1,13 +1,13 @@
 ﻿using System.Text.Json;
 using Test_1.Models;
 
-namespace Test_1.TestData
+namespace Test_1.Models.TestData
 {
     public class Fake_SongData
     {
-        public static List<InfoSong> Get()
+        public static List<InfoSong> Get(string filenameJson)
         {
-            var json = File.ReadAllText(@"TestData\fake_songdata.json");
+            var json = File.ReadAllText(filenameJson);
 
             var res = JsonSerializer.Deserialize<List<InfoSong>>(json);
 

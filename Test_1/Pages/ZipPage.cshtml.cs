@@ -15,17 +15,20 @@ namespace Test_1.Pages
         }
         public IActionResult OnGet()
         {
-            string? zipPath = TempData["ZipFile"] as string;
-            string fileName = "your cool.zip";
+            if (TempData["ZipFile"] != null)
+            { 
+                string zipPath = TempData["ZipFile"] as string ?? ""; ;
+                string fileName = "your cool.zip";
 
-            Response.Headers["Content-Disposition"] = $"attachment; filename=\"{fileName}\"";
+                Response.Headers["Content-Disposition"] = $"attachment; filename=\"{fileName}\"";
 
-            var stream = System.IO.File.OpenRead(zipPath);
-            var result = File(stream, "application/zip");
+                var stream = System.IO.File.OpenRead(zipPath);
+                var result = File(stream, "application/zip");
 
-            TempData.Remove("ZipFile");
+                return result;
+            }
 
-            return result;
+            return Page();
         }
     }
 }

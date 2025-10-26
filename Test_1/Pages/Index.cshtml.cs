@@ -4,9 +4,9 @@ using System.ComponentModel.DataAnnotations;
 using System.IO.Compression;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text.Json;
-using Test_1.Dowloaders;
 using Test_1.Models;
-using Test_1.TestData;
+using Test_1.Models.Dowloaders;
+using Test_1.Models.TestData;
 
 namespace Test_1.Pages
 {
@@ -25,18 +25,15 @@ namespace Test_1.Pages
 
         [BindProperty]
         [Required(ErrorMessage = "Поле 'Название песни' обязательно для заполнения")]
-        [StringLength(100, MinimumLength = 1, ErrorMessage = "Название песни не может быть пустым")]
         public string NameSong { get; set; }
         public async Task<IActionResult> OnPost()
         {
-            string jsonFile;
             string zipFile;
+            List<InfoSong> songs;
 
             if (_configuration["DEBUG_USE_LOCAL_DATA"] == "true")
             {
-                var songs = Fake_SongData.Get();
-
-                jsonFile = System.IO.File.ReadAllText(_configuration["DEBUG_PATH_JSON"]);
+                songs = Fake_SongData.Get(_configuration["DEBUG_PATH_JSON"]);
                 zipFile = _configuration["DEBUG_PATH_ZIP"];
             }
             else
@@ -44,9 +41,7 @@ namespace Test_1.Pages
                 if (!ModelState.IsValid)
                     return Page();
 
-                var songs = await DowloadMp3Party.GetInfoSong(NameSong);
-
-                jsonFile = JsonSerializer.Serialize(songs);
+                songs = await DowloadMp3Party.GetInfoSong(NameSong);
 
                 var destinationFolder = @"C:\Users\Werty\Desktop\test\" + Guid.NewGuid().ToString();
 
@@ -57,8 +52,10 @@ namespace Test_1.Pages
                 zipFile = Dowloader.CompresToZip(destinationFolder);
             }
 
-                
-            TempData["Songs"] = jsonFile;
+            // For LinkPage.cshtml
+            TempData["Songs"] = JsonSerializer.Serialize<List<InfoSong>>(songs);
+
+            // For ZipPage.cshtml
             TempData["ZipFile"] = zipFile;
 
             return RedirectToPage("LinksPage");
