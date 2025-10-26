@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.ComponentModel.DataAnnotations;
 using System.IO.Compression;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text.Json;
@@ -22,7 +23,11 @@ namespace Test_1.Pages
 
         }
 
-        public async Task<IActionResult> OnPost(string nameSong)
+        [BindProperty]
+        [Required(ErrorMessage = "Поле 'Название песни' обязательно для заполнения")]
+        [StringLength(100, MinimumLength = 1, ErrorMessage = "Название песни не может быть пустым")]
+        public string NameSong { get; set; }
+        public async Task<IActionResult> OnPost()
         {
             string jsonFile;
             string zipFile;
@@ -36,7 +41,10 @@ namespace Test_1.Pages
             }
             else
             {
-                var songs = await DowloadMp3Party.GetInfoSong(nameSong);
+                if (!ModelState.IsValid)
+                    return Page();
+
+                var songs = await DowloadMp3Party.GetInfoSong(NameSong);
 
                 jsonFile = JsonSerializer.Serialize(songs);
 

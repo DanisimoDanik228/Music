@@ -1,5 +1,7 @@
 ﻿@page
 @model Test_1.Pages.IndexModel
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 
 <!DOCTYPE html>
 <html lang="ru">
@@ -14,8 +16,10 @@
     <div class="container">
         <h1>Поиск музыки</h1>
         <form method='post'>
-            @Html.AntiForgeryToken()<input type='text' name='nameSong' class="search-input" placeholder="Название песни">
+            @Html.AntiForgeryToken()
+            <input type='text' name='NameSong' class="search-input" placeholder="Название песни">
             <button type='submit' class="search-btn">Найти</button>
+            <span asp-validation-for="NameSong" class="text-danger validation-message"></span>
         </form>
     </div>
 </body>
