@@ -6,17 +6,21 @@ using System.Runtime.InteropServices.ComTypes;
 using System.Text.Json;
 using Test_1.Models;
 using Test_1.Models.Dowloaders;
+using Test_1.Models.SiteParse;
 using Test_1.Models.TestData;
+using Test_1.Services;
 
 namespace Test_1.Pages
 {
     public class IndexModel : PageModel
     {
         private readonly IConfiguration _configuration;
+        private readonly ProductManager _productManager;
 
-        public IndexModel(IConfiguration configuration)
+        public IndexModel(IConfiguration configuration, ProductManager productManager)
         {
             _configuration = configuration;
+            _productManager = productManager;
         }
         public void OnGet()
         {
@@ -28,32 +32,14 @@ namespace Test_1.Pages
         public string NameSong { get; set; }
         public async Task<IActionResult> OnPost()
         {
-            string zipFile;
-            List<InfoSong> songs;
+            if (!ModelState.IsValid)
+                return Page();
 
-            if (_configuration["DEBUG_USE_LOCAL_DATA"] == "true")
-            {
-                songs = Fake_SongData.Get(_configuration["DEBUG_PATH_JSON"]);
-                zipFile = _configuration["DEBUG_PATH_ZIP"];
-            }
-            else
-            {
-                if (!ModelState.IsValid)
-                    return Page();
-
-                songs = await DowloadMp3Party.GetInfoSong(NameSong);
-
-                var destinationFolder = @"C:\Users\Werty\Desktop\test\" + Guid.NewGuid().ToString();
-
-                Directory.CreateDirectory(destinationFolder);
-
-                await Dowloader.DowloadFilesAsync(songs, destinationFolder);
-
-                zipFile = Dowloader.CompresToZip(destinationFolder);
-            }
+            (string zipFile, List<InfoSong> songs) = await _productManager.FindMusic(NameSong,_configuration);
 
             // For LinkPage.cshtml
-            TempData["Songs"] = JsonSerializer.Serialize<List<InfoSong>>(songs);
+            var json = JsonSerializer.Serialize<List<InfoSong>>(songs);
+            TempData["Songs"] = json;
 
             // For ZipPage.cshtml
             TempData["ZipFile"] = zipFile;

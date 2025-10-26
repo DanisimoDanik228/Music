@@ -1,18 +1,14 @@
-﻿namespace Test_1.Models
+﻿using System.Text.Json.Serialization;
+using Test_1.Models.Enum;
+
+namespace Test_1.Models
 {
     public class InfoSong
     {
-        public InfoSong(string artist, string song, string songUrl, string urlArtist)
+        [JsonConstructor]
+        public InfoSong(SourseSite sourseSite)
         {
-            this.artist = artist;
-            this.songName = song;
-            this.songUrl = songUrl;
-            this.artistUrl = urlArtist;
-        }
-
-        public InfoSong()
-        {
-            
+            this.sourseSite = sourseSite;
         }
 
         public string artist { get; set; }
@@ -20,10 +16,12 @@
         public string songUrl { get; set; }
         public string artistUrl { get; set; }
         public string dowloadLink { get; set; }
+        // May be nust used string
+        public SourseSite sourseSite { get; set; }
 
         public override string ToString()
         {
-            return $"{artist} __ {songName} __ {songUrl} __ {artistUrl}";
+            return $"{artist} __ {songName}";
         }
     }
 }

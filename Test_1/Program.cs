@@ -3,6 +3,7 @@ using System.Net.Mime;
 using Test_1.Models.Dowloaders;
 using Test_1.Models;
 using DotNetEnv;
+using Test_1.Services;
 
 namespace Test_1
 {
@@ -22,6 +23,7 @@ namespace Test_1
 
             builder.Services.AddRazorPages();
 
+            builder.Services.AddScoped<ProductManager>();
 
             Env.Load("./Core/.env");
             builder.Configuration.AddEnvironmentVariables();

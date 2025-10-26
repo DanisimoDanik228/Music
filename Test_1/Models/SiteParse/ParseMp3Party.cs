@@ -3,17 +3,16 @@ using System;
 using System.Buffers.Text;
 using System.Net.Http;
 using System.Text;
-using Test_1.Models;
 
-namespace Test_1.Models.Dowloaders
+namespace Test_1.Models.SiteParse
 {
-    public class DowloadMp3Party
+    public class ParseMp3Party : IParseSite
     {
-        private const string urlSite = "https://mp3party.net";
+        private const string urlSite  = "https://mp3party.net";
 
         private async static Task<InfoSong> GetAddintionalInfo(string urlMusic, HttpClient httpClient)
         {
-            InfoSong res = new InfoSong();
+            InfoSong res = new InfoSong(Enum.SourseSite.Mp3Party);
 
             // happy link ->  href="/yabanner?url=https%3A%2F%2Fdl2.mp3party.net%2Fdownload%2F8952738
             // %3A  this :
@@ -32,9 +31,9 @@ namespace Test_1.Models.Dowloaders
 
 
 
-            var mainSection = doc.DocumentNode.SelectNodes("//div[contains(@class, 'breadcrumbs')]");
+            var mainSection = doc.DocumentNode.SelectNodes(".//div[contains(@class, 'breadcrumbs')]");
 
-            var items = mainSection[0].SelectNodes("//span[contains(@itemprop, 'name')]");
+            var items = mainSection[0].SelectNodes(".//span[contains(@itemprop, 'name')]");
 
             //items[1] - artist
             //items[2] - song
@@ -63,7 +62,7 @@ namespace Test_1.Models.Dowloaders
 
             if (songPages != null)
             {
-                for (int i = 0; i < songPages.Count; i += 2)
+                for (int i = 0; i < int.Min(songPages.Count, 2 * IParseSite._maxCountSong); i += 2)
                 {
                     var urlMusic = songPages[i].GetAttributeValue("href", "");
 
