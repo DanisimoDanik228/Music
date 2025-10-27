@@ -18,12 +18,18 @@
             @foreach (var song in Model.Songs)
             {
                 <div class="song-item">
-                    <a href="@song.dowloadLink" class="song-link" target="_blank">
-                        @song.artist - @song.songName
+                    <a href="@song.data.dowloadLink" class="song-link" target="_blank">
+                        @song.data.artist - @song.data.songName
                     </a>
-                    <a class="download-btn" download>
-                        @song.sourseSite
-                    </a>
+                    <a class="download-label-green" download>
+                        @song.data.sourseSite
+                    </a>  
+                    @if (!song._successDowload)
+                    {
+                        <a class="download-label-green" download>
+                            Error Install
+                        </a>
+                    }
                 </div>
             }
         </div>

@@ -15,7 +15,7 @@ namespace Test_1.Services
 
         }
 
-        public async Task<(string zipFile,List<InfoSong> songs)> FindDownloadMusic(string nameSong)
+        public async Task<(string zipFile,List<ResultInfoSong> songs)> FindDownloadMusic(string nameSong)
         {
             string zipFile;
             List<InfoSong> songs;
@@ -28,6 +28,7 @@ namespace Test_1.Services
             else
             {
                 songs = await ParseMuzofond.GetInfoSong(nameSong);
+                songs.AddRange(await ParseMp3Party.GetInfoSong(nameSong));
 
                 string mainFolder = Path.Combine(AppSetting.PATH_STORAGE, DateTime.Now.ToString("HH-mm-ss"));
                 zipFile = mainFolder + ".zip";
@@ -46,7 +47,29 @@ namespace Test_1.Services
             if (sizeBytes < 1_000_000)
                 throw new WebException($"Failed to download files. Real size -> {sizeBytes}");
 
-            return (zipFile, songs);
+            List<ResultInfoSong> downloadSongs = new List<ResultInfoSong>(songs.Count);
+
+            string directoryPath = zipFile.Remove(zipFile.IndexOf("."));
+            for (int i = 0; i < songs.Count; i++)
+            {
+                downloadSongs.Add(new());
+                downloadSongs[i].data = songs[i];
+                downloadSongs[i]._successDowload = CheckDownload(songs[i], directoryPath);
+            }
+
+            return (zipFile, downloadSongs);
+        }
+
+        private static bool CheckDownload(InfoSong song, string destinationFolder)
+        {
+            string filename = Path.Combine(destinationFolder, song.ToString());
+
+            var flag1 = File.Exists(filename);
+
+            if (!flag1)
+                return false;
+
+            return new FileInfo(filename).Length > 1_000_000; // 1 MB
         }
     }
 }

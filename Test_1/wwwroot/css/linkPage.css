@@ -52,10 +52,10 @@
         color: #1a5a8a;
     }
 
-.download-label {
+.download-label-green {
+    background: #27ae60;
     display: inline-block;
     padding: 4px 8px;
-    background: #27ae60;
     color: white;
     border-radius: 4px;
     font-size: 10px;
@@ -64,10 +64,46 @@
     cursor: pointer;
 }
 
-    .download-label:hover {
+    .download-label-green:hover {
         background: #219653;
         transform: translateY(-1px);
     }
+
+    /*
+.download-label-blue {
+    background: #27ae60;
+    display: inline-block;
+    padding: 4px 8px;
+    color: white;
+    border-radius: 4px;
+    font-size: 10px;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
+
+    .download-label-blue:hover {
+        background: #219653;
+        transform: translateY(-1px);
+    }
+
+.download-label-red {
+    background: #27ae60;
+    display: inline-block;
+    padding: 4px 8px;
+    color: white;
+    border-radius: 4px;
+    font-size: 10px;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
+
+    .download-label-red:hover {
+        background: #219653;
+        transform: translateY(-1px);
+    }
+    */
 
 .actions {
     margin-top: 25px;

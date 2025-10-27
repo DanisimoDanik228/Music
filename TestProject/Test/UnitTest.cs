@@ -22,11 +22,10 @@ namespace Test_1.Test
         }
 
         [Test]
-        public async Task StartTestEngine()  
+        [TestCase("Love")]
+        [TestCase("Hope")]
+        public async Task StartTestEngine(string name)  
         {
-            var name = "Love";
-            // invalid with Hope
-
             var engine = new ProductManager();
             var res = await engine.FindDownloadMusic(name);
 
@@ -37,12 +36,13 @@ namespace Test_1.Test
             int countFindSongs = res.songs.Count;
             int countDownloadSongs = files.Length;
 
-            Assert.That(countDownloadSongs == countFindSongs);
+             Assert.That(countDownloadSongs, Is.EqualTo(countFindSongs));
 
             if (countFindSongs * 1_000_000 > sizeZip)  
                 Assert.Fail("Failed download files");
         }
 
+        
         //[Test]
         //public void TestSerializerDeserializer()
         //{

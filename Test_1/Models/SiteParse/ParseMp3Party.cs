@@ -26,6 +26,8 @@ namespace Test_1.Models.SiteParse
             var downloadLink = downloadTag.GetAttributeValue("href", "");
             string decodedDownloadUrl = Uri.UnescapeDataString(downloadLink.Substring(downloadLink.IndexOf("https")));
 
+            decodedDownloadUrl.Replace("download","online");
+
             res.dowloadLink = decodedDownloadUrl;
             res.songUrl = urlMusic;
 

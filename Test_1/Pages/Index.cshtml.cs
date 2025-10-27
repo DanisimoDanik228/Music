@@ -35,10 +35,10 @@ namespace Test_1.Pages
                 return Page();
 
 
-            (string zipFile,List<InfoSong> songs) = await _productManager.FindDownloadMusic(NameSong);
+            (string zipFile,List<ResultInfoSong> songs) = await _productManager.FindDownloadMusic(NameSong);
 
             // For LinkPage.cshtml
-            var json = JsonSerializer.Serialize<List<InfoSong>>(songs);
+            var json = JsonSerializer.Serialize<List<ResultInfoSong>>(songs);
             TempData["Songs"] = json;
 
             // For ZipPage.cshtml
